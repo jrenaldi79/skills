@@ -24,15 +24,13 @@ def find_gdrive_path(user_home):
     
     print("Searching for Google Drive directory...")
     for path in possible_paths:
-        # Check for a common marker file or directory
         if (path / "My Drive").exists():
             print(f"Found Google Drive at: {path / 'My Drive'}")
             return path / "My Drive"
-        if path.exists() and any(item.name.startswith('.drive') for item in path.iterdir()):
+        if path.is_dir() and any(item.name.startswith('.drive') for item in path.iterdir()):
              print(f"Found Google Drive at: {path}")
              return path
 
-    # Fallback for the most common path if no markers are found
     if possible_paths[0].exists():
         print(f"Found Google Drive at: {possible_paths[0]}")
         return possible_paths[0]
@@ -74,7 +72,6 @@ def main():
         
         print(f"Successfully created test file: {test_file_path}")
         print("Please check your Google Drive online to confirm the file has synced.")
-        # Print the final path to stdout so the calling script can capture it
         print(skill_deliverables_path)
 
     except Exception as e:

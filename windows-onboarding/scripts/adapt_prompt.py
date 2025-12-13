@@ -134,10 +134,10 @@ def get_user_input():
     print("\nFor Google Drive integration (optional, press Enter to skip):")
     gdrive_email = input("Enter your Google Drive email: ").strip()
     
+    # We use a placeholder path for now. It will be replaced with the verified path later.
+    gdrive_path = "[Not configured - see references/gdrive_setup.md]"
     if gdrive_email:
-        gdrive_path = f"{user_home}\\Google Drive\\Skill-Deliverables"
-    else:
-        gdrive_path = "[Not configured - see references/gdrive_setup.md]"
+        gdrive_path = f"{user_home}\\Google Drive\\Skill-Deliverables" # Placeholder
     
     return {
         "user_name": user_name,
@@ -154,19 +154,16 @@ def scan_skills_registry(skills_path):
     """Scan skills directory and build registry from SKILL.md files."""
     registry_entries = []
     
-    # Ensure skills path exists
     skills_dir = Path(skills_path)
     if not skills_dir.exists():
         return generate_skills_registry_placeholder()
         
-    # Scan for skills
     for item in skills_dir.iterdir():
         if item.is_dir():
             skill_md = item / "SKILL.md"
             if skill_md.exists():
                 try:
                     content = skill_md.read_text(encoding='utf-8')
-                    # Simple parsing of frontmatter
                     name = ""
                     description = ""
                     
@@ -199,7 +196,6 @@ def generate_skills_registry_placeholder():
 
 
 def adapt_system_prompt(user_data):
-    # Try to scan for existing skills, otherwise use placeholder
     try:
         skills_registry = scan_skills_registry(user_data["skills_path"])
     except Exception:
@@ -260,7 +256,6 @@ def handle_gdrive_setup(user_data):
         output_lines = result.stdout.strip().splitlines()
         verified_path = output_lines[-1]
         
-        # Print all output except the last line (the path) for cleaner user display
         print("\n".join(output_lines[:-1]))
         
         print(f"\n[SUCCESS] Google Drive setup verified successfully!")
@@ -284,15 +279,12 @@ def handle_gdrive_setup(user_data):
 
 
 def main():
-    # Verify administrator privileges before proceeding
     check_admin_privileges()
     
     user_data = get_user_input()
     
-    # If GDrive email is provided, handle setup and get the verified path BEFORE generating files
     if user_data["gdrive_email"]:
         verified_gdrive_path = handle_gdrive_setup(user_data)
-        # Update user_data with the REAL path
         user_data["gdrive_path"] = verified_gdrive_path
     
     print("\n=== Generating System Prompt & Config Files ===")
