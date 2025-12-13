@@ -4,7 +4,7 @@ Please do the following steps IN ORDER:
 
 **STEP 1: Create Admin Verification Shortcuts**
 
-Create two desktop shortcuts for ChatWise (check if they exist first):
+Create two desktop shortcuts for ChatWise (IMPORTANT, you MUST first check if they exist before creating them):
 
 1. Create a shortcut called "ChatWise (Admin).lnk" that always runs as administrator
 2. Create a shortcut called "ChatWise (Regular).lnk" that runs as a regular user
@@ -63,33 +63,11 @@ Make sure the zip file is unzipped and placed into the C:\Users\[my-username]\sk
 
 **STEP 5: Install Dependencies (Python & Git)**
 
-Run the dependency installation script to install Chocolatey, Python, and Git:
+Run the dependency installation script to install Chocolatey, Python, and Git. But always check with the user before proceeding to running scripts. You must never rewrite these scripts. You should only execute them.
 
 ```powershell
 cd C:\Users\[my-username]\skills\windows-onboarding\scripts
 .\install_dependencies.ps1
-```
-
-**PRE-INSTALLATION CHECKS:**
-
-The script MUST check if tools are already installed before attempting installation:
-
-```powershell
-# Check for Python
-$pythonInstalled = Get-Command python -ErrorAction SilentlyContinue
-if ($pythonInstalled) {
-    Write-Host "✓ Python already installed: $(python --version)"
-} else {
-    Write-Host "Installing Python..."
-}
-
-# Check for Git
-$gitInstalled = Get-Command git -ErrorAction SilentlyContinue
-if ($gitInstalled) {
-    Write-Host "✓ Git already installed: $(git --version)"
-} else {
-    Write-Host "Installing Git..."
-}
 ```
 
 The script will:
@@ -132,7 +110,7 @@ The script will:
 3. **Post-Installation Verification**: Before proceeding to Step 6, confirm:
    - `python --version` returns a valid version number
    - `git --version` returns a valid version number
-   - Both commands work in a NEW PowerShell window (not just the current session)
+   - Both commands work in a NEW PowerShell window (not just the current session). Test both.
 
 Wait for the script to complete. If it asks me to close and reopen ChatWise for PATH changes, instruct me to:
 1. Close ChatWise completely
@@ -141,7 +119,7 @@ Wait for the script to complete. If it asks me to close and reopen ChatWise for 
 
 **STEP 6: Run Windows Onboarding Script**
 
-Once dependencies are installed, run the Windows onboarding adapter script:
+Once dependencies are installed, run/execute the Windows onboarding adapter script:
 
 ```powershell
 cd C:\Users\[my-username]\skills\windows-onboarding\scripts
