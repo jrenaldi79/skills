@@ -54,9 +54,10 @@ function Remove-PythonCompletely {
     
     # Clean PATH
     $currentPath = [System.Environment]::GetEnvironmentVariable('Path','Machine')
-    $cleanedPath = ($currentPath -split ";") | Where-Object { 
+    $pathParts = ($currentPath -split ";") | Where-Object { 
         $_ -notlike "*Python*" 
-    } | Join-Object -Separator ";"
+    }
+    $cleanedPath = $pathParts -join ";"
     [System.Environment]::SetEnvironmentVariable('Path', $cleanedPath, 'Machine')
     
     Refresh-Path

@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 import json
 import ctypes
+import subprocess
 
 
 def is_admin():
@@ -38,7 +39,7 @@ def check_admin_privileges():
         print("\n" + "="*60)
         sys.exit(1)
     else:
-        print("✓ Running with Administrator privileges\n")
+        print("[OK] Running with Administrator privileges\n")
 
 
 SYSTEM_PROMPT_TEMPLATE = '''# Local Skills & Automation Assistant — System Prompt
@@ -103,6 +104,7 @@ You are the Local Skills & Automation Assistant for {user_name}. Your job is to 
 - Be concise by default; expand only as needed.
 - Use bullet points for clarity.
 - Unless otherwise requested, respond in same language as user.
+- When using the terminal tool, provide the user with quick updates when doing so so they know what is happening. One sentence updates are fine.
 
 ## Skills Registry (Full Metadata)
 {skills_registry}
@@ -148,6 +150,46 @@ def get_user_input():
     }
 
 
+def scan_skills_registry(skills_path):
+    """Scan skills directory and build registry from SKILL.md files."""
+    registry_entries = []
+    
+    # Ensure skills path exists
+    skills_dir = Path(skills_path)
+    if not skills_dir.exists():
+        return generate_skills_registry_placeholder()
+        
+    # Scan for skills
+    for item in skills_dir.iterdir():
+        if item.is_dir():
+            skill_md = item / "SKILL.md"
+            if skill_md.exists():
+                try:
+                    content = skill_md.read_text(encoding='utf-8')
+                    # Simple parsing of frontmatter
+                    name = ""
+                    description = ""
+                    
+                    if content.startswith("---"):
+                        frontmatter = content.split("---")[1]
+                        for line in frontmatter.splitlines():
+                            if line.strip().startswith("name:"):
+                                name = line.split(":", 1)[1].strip()
+                            elif line.strip().startswith("description:"):
+                                description = line.split(":", 1)[1].strip()
+                    
+                    if name:
+                        entry = f"### {name}\n- **name:** {name}\n- **description:** {description or 'No description provided.'}"
+                        registry_entries.append(entry)
+                except Exception as e:
+                    print(f"Warning: Failed to parse {skill_md}: {e}")
+    
+    if not registry_entries:
+        return generate_skills_registry_placeholder()
+        
+    return "\n\n".join(sorted(registry_entries))
+
+
 def generate_skills_registry_placeholder():
     return """### skill-creator
 - **name:** skill-creator
@@ -157,7 +199,12 @@ def generate_skills_registry_placeholder():
 
 
 def adapt_system_prompt(user_data):
-    skills_registry = generate_skills_registry_placeholder()
+    # Try to scan for existing skills, otherwise use placeholder
+    try:
+        skills_registry = scan_skills_registry(user_data["skills_path"])
+    except Exception:
+        skills_registry = generate_skills_registry_placeholder()
+        
     return SYSTEM_PROMPT_TEMPLATE.format(
         user_name=user_data["user_name"],
         skills_path=user_data["skills_path"],
@@ -174,6 +221,67 @@ def save_config(user_data, output_dir):
         json.dump(user_data, f, indent=2)
     return config_path
 
+def handle_gdrive_setup(user_data):
+    """Guides user through manual GDrive setup and returns the verified path."""
+    print("\n=== Google Drive Setup Assistant ===")
+    print("To sync your deliverables, please follow these manual setup steps:")
+    print("\n1. Download and Install Google Drive for Desktop:")
+    print("   - Go to: https://www.google.com/drive/download/")
+    print("   - Run the installer and follow the on-screen instructions.")
+    print("\n2. Sign In and Configure:")
+    print("   - After installation, sign in with your Google account in the browser.")
+    print(f"   - Ensure you are signed in as: {user_data['gdrive_email']}")
+    print("   - Choose the 'Mirror files' option when prompted for best performance.")
+
+    while True:
+        confirm = input("\nHave you completed the download, installation, and sign-in? [y/n]: ").lower().strip()
+        if confirm == 'y':
+            break
+        elif confirm == 'n':
+            print("Aborting. Please complete the setup steps and run the script again.")
+            sys.exit(0)
+        else:
+            print("Invalid input. Please enter 'y' or 'n'.")
+
+    print("\n[VERIFYING] Attempting to locate Google Drive and verify setup...")
+    
+    verifier_script_path = Path(__file__).parent / "verify_gdrive.py"
+    user_home = Path(user_data['skills_path']).parent
+    
+    try:
+        result = subprocess.run(
+            [sys.executable, str(verifier_script_path), str(user_home)],
+            capture_output=True,
+            text=True,
+            check=True,
+            encoding='utf-8'
+        )
+        
+        output_lines = result.stdout.strip().splitlines()
+        verified_path = output_lines[-1]
+        
+        # Print all output except the last line (the path) for cleaner user display
+        print("\n".join(output_lines[:-1]))
+        
+        print(f"\n[SUCCESS] Google Drive setup verified successfully!")
+        print(f"      -> Confirmed Path: {verified_path}")
+        return verified_path
+        
+    except subprocess.CalledProcessError as e:
+        print("\n[ERROR] Google Drive verification failed!")
+        print("Please double-check the setup steps and try again.")
+        print("Details from verifier:")
+        if e.stdout:
+            print("--- Output ---")
+            print(e.stdout)
+        if e.stderr:
+            print("--- Error ---")
+            print(e.stderr)
+        sys.exit(1)
+    except (FileNotFoundError, IndexError):
+        print(f"\n[ERROR] Verification script failed or returned an unexpected value.")
+        sys.exit(1)
+
 
 def main():
     # Verify administrator privileges before proceeding
@@ -181,7 +289,13 @@ def main():
     
     user_data = get_user_input()
     
-    print("\n=== Generating System Prompt ===")
+    # If GDrive email is provided, handle setup and get the verified path BEFORE generating files
+    if user_data["gdrive_email"]:
+        verified_gdrive_path = handle_gdrive_setup(user_data)
+        # Update user_data with the REAL path
+        user_data["gdrive_path"] = verified_gdrive_path
+    
+    print("\n=== Generating System Prompt & Config Files ===")
     adapted_prompt = adapt_system_prompt(user_data)
     
     output_dir = Path.cwd()
@@ -196,14 +310,10 @@ def main():
     
     config_path = save_config(user_data, output_dir)
     
-    print(f"\n✅ System prompt saved to: {prompt_path}")
-    print(f"✅ User config saved to: {config_path}")
+    print(f"\n[SUCCESS] System prompt saved to: {prompt_path}")
+    print(f"[SUCCESS] User config saved to: {config_path}")
     
-    if user_data["gdrive_email"]:
-        print(f"\n⚠️  Next step: Set up Google Drive sync")
-        print(f"   See: references/gdrive_setup.md")
-    
-    print(f"\n📁 Create these directories on your machine:")
+    print(f"\n[ACTION] Please ensure these directories exist on your machine:")
     print(f"   - {user_data['skills_path']}")
     print(f"   - {user_data['tmp_path']}")
     print(f"   - {user_data['deliverables_path']}")
