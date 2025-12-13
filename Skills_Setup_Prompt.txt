@@ -1,0 +1,181 @@
+I need you to help me set up my Windows machine with a skills library and onboard me to the system.
+
+Please do the following steps IN ORDER:
+
+**STEP 1: Create Admin Verification Shortcuts**
+
+Create two desktop shortcuts for ChatWise (check if they exist first):
+
+1. Create a shortcut called "ChatWise (Admin).lnk" that always runs as administrator
+2. Create a shortcut called "ChatWise (Regular).lnk" that runs as a regular user
+
+Both shortcuts should point to: C:\Users\[my-username]\AppData\Local\ChatWise\chatwise.exe
+
+The admin shortcut needs the "Run as administrator" flag set (modify byte 0x15 to include flag 0x20).
+
+Once created, ask me to confirm I can see both shortcuts on my desktop before proceeding.
+
+**STEP 2: Restart ChatWise as Administrator (CRITICAL)**
+
+Once shortcuts are confirmed, instruct me to:
+
+1. Close this ChatWise window completely
+2. Open Task Manager (Ctrl+Shift+Esc) and kill all "chatwise.exe" processes under the Processes tab. Please note, users will be using Windows as a virtual machine so some users will be on a mac and some on Windows so give them the right key sequence based on what type of laptop they are using.
+3. Double-click the "ChatWise (Admin).lnk" shortcut on my desktop
+4. When the UAC prompt appears, click "Yes" to run as administrator
+5. Return to this conversation and type "I'm back as admin"
+**DO NOT PROCEED BEYOND THIS POINT UNTIL I RETURN**
+
+**STEP 3: Verify Admin Privileges (MUST PASS)**
+
+Once I return, verify I'm running as administrator by running this PowerShell command:
+
+```powershell
+([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+```
+
+This MUST return "True". If it returns "False":
+- Stop immediately
+- Tell me I'm not running as admin
+- Have me repeat Step 2
+- Do NOT proceed to Step 4
+
+If it returns "True", confirm "✓ Admin privileges verified" and proceed to Step 4.
+
+**STEP 4: Clone Skills Repository**
+
+Clone the GitHub repository from https://github.com/jrenaldi79/skills. The user doesn't have Git so you must use something similar to: using Git:
+
+```powershell
+
+# Download and extract a GitHub repo
+$repoUrl = "https://github.com/username/repository"
+$zipUrl = "$repoUrl/archive/refs/heads/main.zip"  # or "master" instead of "main"
+$outputPath = "C:\path\to\destination"
+
+Invoke-WebRequest -Uri $zipUrl -OutFile "$env:TEMP\repo.zip"
+Expand-Archive -Path "$env:TEMP\repo.zip" -DestinationPath $outputPath -Force
+Remove-Item "$env:TEMP\repo.zip"
+
+```
+
+Make sure the zip file is unzipped and placed into the C:\Users\[my-username]\skills directory
+
+**STEP 5: Install Dependencies (Python & Git)**
+
+Run the dependency installation script to install Chocolatey, Python, and Git:
+
+```powershell
+cd C:\Users\[my-username]\skills\windows-onboarding\scripts
+.\install_dependencies.ps1
+```
+
+**PRE-INSTALLATION CHECKS:**
+
+The script MUST check if tools are already installed before attempting installation:
+
+```powershell
+# Check for Python
+$pythonInstalled = Get-Command python -ErrorAction SilentlyContinue
+if ($pythonInstalled) {
+    Write-Host "✓ Python already installed: $(python --version)"
+} else {
+    Write-Host "Installing Python..."
+}
+
+# Check for Git
+$gitInstalled = Get-Command git -ErrorAction SilentlyContinue
+if ($gitInstalled) {
+    Write-Host "✓ Git already installed: $(git --version)"
+} else {
+    Write-Host "Installing Git..."
+}
+```
+
+The script will:
+- **CHECK** if Chocolatey package manager is installed (if not present, install it)
+- **CHECK** if Python 3.x is installed (if not present, install in **NON-INTERACTIVE/SILENT MODE**)
+- **CHECK** if Git is installed (if not present, install in **NON-INTERACTIVE/SILENT MODE**)
+
+**CRITICAL REQUIREMENTS FOR INSTALLATIONS:**
+
+1. **Non-Interactive Mode**: All installations MUST use silent/quiet flags to avoid user prompts:
+   - Chocolatey: Use `-y` flag (auto-confirm)
+   - Python: Use `/quiet` or `/passive` installer flags
+   - Git: Use `/VERYSILENT /NORESTART` flags
+
+2. **PATH Configuration**: After each installation, the script MUST:
+   - Add the tool's binary path to the system PATH environment variable
+   - Verify the PATH was updated successfully
+   - Test that PowerShell can find the tool by running:
+     ```powershell
+     # For Python
+     python --version
+     
+     # For Git
+     git --version
+     ```
+   - If commands fail, manually add to PATH:
+     ```powershell
+     # Add Python to PATH
+     $pythonPath = "C:\Python3x"  # Adjust version as needed
+     [Environment]::SetEnvironmentVariable("Path", $env:Path + ";$pythonPath;$pythonPath\Scripts", [System.EnvironmentVariableTarget]::Machine)
+     
+     # Add Git to PATH
+     $gitPath = "C:\Program Files\Git\cmd"
+     [Environment]::SetEnvironmentVariable("Path", $env:Path + ";$gitPath", [System.EnvironmentVariableTarget]::Machine)
+     
+     # Refresh environment variables in current session
+     $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+     ```
+
+3. **Post-Installation Verification**: Before proceeding to Step 6, confirm:
+   - `python --version` returns a valid version number
+   - `git --version` returns a valid version number
+   - Both commands work in a NEW PowerShell window (not just the current session)
+
+Wait for the script to complete. If it asks me to close and reopen ChatWise for PATH changes, instruct me to:
+1. Close ChatWise completely
+2. Reopen using "ChatWise (Admin)" shortcut
+3. Return to this conversation and verify tools are accessible
+
+**STEP 6: Run Windows Onboarding Script**
+
+Once dependencies are installed, run the Windows onboarding adapter script:
+
+```powershell
+cd C:\Users\[my-username]\skills\windows-onboarding\scripts
+python adapt_prompt.py
+```
+
+The script will first verify I'm running as Administrator. If it exits with an admin error:
+1. Tell me I'm not running as admin
+2. Instruct me to close ChatWise completely
+3. Have me open Task Manager (Ctrl+Shift+Esc)
+4. Have me kill all 'chatwise.exe' and 'node.exe' processes
+5. Have me double-click 'ChatWise (Admin)' shortcut
+6. Have me return and run the script again
+
+Once admin is verified, the script will continue.
+The onboarding script will ask me for:
+- My full name (e.g., "John Smith")
+- My Windows username (e.g., "jsmith")
+- My Google Drive email (optional, for cloud sync)
+
+The script will generate:
+- `system_prompt.md` - Customized system prompt for my machine
+- `user_config.json` - User configuration file
+
+After the script completes, it will show instructions for:
+- Creating required directory structure
+- Setting up Google Drive sync (optional)
+- Applying the system prompt
+
+**STEP 7: Summary**
+
+Once all steps are complete, provide me with:
+- Confirmation that all dependencies are installed
+- Location of the generated system_prompt.md file
+- Next steps for applying the system prompt to my ChatWise configuration
+
+Please start with Step 1 now.
