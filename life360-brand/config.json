@@ -1,0 +1,30 @@
+{
+  "brand_name": "Life360",
+  "fonts": {
+    "primary": "Helvetica",
+    "fallback": "Arial"
+  },
+  "colors": {
+    "primary": {
+      "name": "Life360 Purple",
+      "hex": "#8652FF",
+      "rgb": [134, 82, 255]
+    },
+    "text": {
+      "heading": {
+        "name": "Black",
+        "hex": "#000000",
+        "rgb": [0, 0, 0]
+      },
+      "body": {
+        "name": "Gray 80",
+        "hex": "#333333",
+        "rgb": [51, 51, 51]
+      }
+    },
+    "background": {
+      "light": "#F6F5F8",
+      "white": "#FFFFFF"
+    }
+  }
+}

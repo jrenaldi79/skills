@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ TITLE }}</title>
+    <style>
+        body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+        img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+        table { border-collapse: collapse !important; }
+        body { height: 100% !important; margin: 0 !important; padding: 0 !important; width: 100% !important; background-color: #F6F5F8; }
+        body, td { font-family: 'Sofia Pro', Arial, Helvetica, sans-serif; color: #333333; }
+        .button-primary { background-color: #8652FF; color: #FFFFFF !important; border-radius: 25px; padding: 14px 30px; display: inline-block; font-weight: bold; text-decoration: none; box-shadow: 0 4px 6px rgba(134, 82, 255, 0.2); }
+        .card { background-color: #FFFFFF; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); overflow: hidden; }
+        .headline-text { color: #333333; font-size: 28px; line-height: 34px; font-weight: 800; letter-spacing: -0.5px; margin: 0 0 20px 0; }
+        .hero-cell { 
+            background-size: cover; 
+            background-position: center; 
+            height: 180px;
+            position: relative;
+        }
+    </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #F6F5F8;">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #F6F5F8;">
+        <tr>
+            <td align="center" style="padding: 40px 10px;">
+                <table border="0" cellpadding="0" cellspacing="0" width="600" class="email-container" style="max-width: 600px; width: 100%;">
+                    <!-- Floating Logo -->
+                    <tr>
+                        <td align="center" style="padding-bottom: 20px;">
+                            <a href="https://www.life360.com" target="_blank">
+                                <img src="data:image/png;base64,{{ LOGO_B64 }}" alt="Life360" width="120" style="display: block; border: 0;">
+                            </a>
+                        </td>
+                    </tr>
+                    <!-- Main Card -->
+                    <tr>
+                        <td class="card" style="background-color: #FFFFFF; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+                            <!-- Header Image (No Text Overlay) -->
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                <tr>
+                                    <td class="hero-cell" align="center" valign="middle" style="background-image: url(data:image/png;base64,{{ HEADER_B64 }}); background-size: cover; background-position: center; height: 180px;">
+                                        <!--[if gte mso 9]>
+                                        <v:image xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="border: 0; display: inline-block; width: 600px; height: 180px;" src="" />
+                                        <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="border: 0; display: inline-block; position: absolute; width: 600px; height: 180px;">
+                                        <v:fill opacity="0%" color="#000000" />
+                                        <v:textbox inset="0,0,0,0">
+                                        <![endif]-->
+                                        <div></div>
+                                        <!--[if gte mso 9]>
+                                        </v:textbox>
+                                        </v:fill>
+                                        </v:rect>
+                                        </v:image>
+                                        <![endif]-->
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Body Content -->
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                <tr>
+                                    <td class="mobile-pad" style="padding: 40px;">
+                                        <!-- Headline moved here -->
+                                        <h1 class="headline-text" style="margin: 0 0 25px 0; color: #333333; font-family: 'Sofia Pro', Arial; font-size: 28px; line-height: 34px; font-weight: 800;">
+                                            {{ HEADLINE }}
+                                        </h1>
+                                        
+                                        {{ BODY_CONTENT }}
+                                        
+                                        <!-- Optional Button -->
+                                        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 30px;">
+                                            <tr>
+                                                <td align="center">
+                                                    <a href="{{ CTA_LINK }}" class="button-primary" style="background-color: #8652FF; color: #FFFFFF; border-radius: 25px; padding: 14px 40px; display: inline-block; font-weight: bold; text-decoration: none; font-size: 16px;">
+                                                        {{ CTA_TEXT }}
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <!-- Footer -->
+                    <tr>
+                        <td align="center" style="padding-top: 30px;">
+                            <p style="margin: 0 0 10px 0; font-size: 14px; color: #999999; font-weight: 600;">
+                                Life360
+                            </p>
+                            <p style="margin: 0 0 10px 0; font-size: 12px; color: #BBBBBB;">
+                                123 Main Street, San Francisco, CA 94105
+                            </p>
+                            <p style="margin: 0; font-size: 12px; color: #BBBBBB;">
+                                <a href="#" style="color: #8652FF; text-decoration: none;">Unsubscribe</a> &nbsp;|&nbsp; <a href="mailto:feedback@life360.com" style="color: #8652FF; text-decoration: none;">Share Feedback</a>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
