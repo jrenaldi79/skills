@@ -22,8 +22,8 @@ Write-Host ""
 
 # --- HELPER FUNCTIONS ---
 
-function Refresh-Environment {
-    Write-Host "Refreshing environment variables..." -ForegroundColor DarkGray
+function Refresh-Path {
+    Write-Host "Refreshing environment variables in current session..." -ForegroundColor DarkGray
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
     
     if (Test-Path "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1") {
@@ -65,7 +65,7 @@ function Cleanup-CorruptedInstall {
         choco uninstall $PackageName -y --force
         choco uninstall "$PackageName.install" -y --force
         Start-Sleep -Seconds 2
-        Refresh-Environment
+        Refresh-Path
     }
 }
 
@@ -73,7 +73,7 @@ function Cleanup-CorruptedInstall {
 
 # 1. Chocolatey
 Write-Host "Checking for Chocolatey..." -ForegroundColor Cyan
-if (Test-CommandAvailable "choco") {
+if ($null -ne (Get-Command choco -ErrorAction SilentlyContinue)) {
     Write-Host "[OK] Chocolatey is already installed" -ForegroundColor Green
 } else {
     Write-Host "Installing Chocolatey..." -ForegroundColor Yellow
@@ -81,7 +81,7 @@ if (Test-CommandAvailable "choco") {
     [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
     try {
         Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-        Refresh-Environment
+        Refresh-Path
         
         if (Get-Command choco -ErrorAction SilentlyContinue) {
             Write-Host "[OK] Chocolatey installed successfully" -ForegroundColor Green
@@ -96,7 +96,7 @@ if (Test-CommandAvailable "choco") {
     }
 }
 
-Refresh-Environment
+Refresh-Path
 Write-Host ""
 
 # 2. Python
@@ -110,10 +110,27 @@ if (Test-InstallationHealth "python" "Python \d+\.\d+\.\d+") {
     Write-Host "Installing Python..." -ForegroundColor Yellow
     try {
         choco install python -y --force
-        Refresh-Environment
+        Refresh-Path
         
-        # Verify installation
-        if (-not (Test-InstallationHealth "python" "Python \d+\.\d+\.\d+")) {
+        # Verify installation with retry loop
+        $pythonWorks = $false
+        $attempts = 0
+        $maxAttempts = 3
+        
+        while (-not $pythonWorks -and $attempts -lt $maxAttempts) {
+            Refresh-Path
+            if (Test-InstallationHealth "python" "Python \d+\.\d+\.\d+") {
+                $pythonWorks = $true
+            } else {
+                $attempts++
+                if ($attempts -lt $maxAttempts) {
+                    Write-Host "Verification attempt $attempts failed. Retrying..." -ForegroundColor Yellow
+                    Start-Sleep -Seconds 2
+                }
+            }
+        }
+        
+        if (-not $pythonWorks) {
             Write-Host "[WARN] Chocolatey install failed verification. Attempting direct fallback..." -ForegroundColor Yellow
             
             # Fallback: Direct Download
@@ -135,14 +152,30 @@ if (Test-InstallationHealth "python" "Python \d+\.\d+\.\d+") {
                     [Environment]::SetEnvironmentVariable("Path", "$currentPath;$pythonPath;$pythonPath\Scripts", "Machine")
                 }
             }
-            Refresh-Environment
+            Refresh-Path
         }
         
         if (Test-InstallationHealth "python" "Python \d+\.\d+\.\d+") {
             $v = python --version 2>&1
             Write-Host "[OK] Python installed successfully: $v" -ForegroundColor Green
         } else {
-            throw "Python installation failed both methods"
+            # Check if it works with full path as last resort
+            $fullPath = "C:\Program Files\Python312\python.exe"
+            if (Test-Path $fullPath) {
+                 try {
+                    $v = & $fullPath --version 2>&1
+                    if ($v -match "Python \d+\.\d+\.\d+") {
+                        Write-Host "[WARNING] Python works with full path but not via PATH" -ForegroundColor Yellow
+                        Write-Host "[WARNING] You'll need to restart ChatWise for PATH to work" -ForegroundColor Yellow
+                    } else {
+                        throw "Python installation failed both methods"
+                    }
+                 } catch {
+                     throw "Python installation failed both methods"
+                 }
+            } else {
+                throw "Python installation failed both methods"
+            }
         }
     } catch {
         Write-Host "ERROR: Failed to install Python" -ForegroundColor Red
@@ -168,7 +201,7 @@ if (Test-InstallationHealth "git" "git version") {
     Write-Host "Installing Git..." -ForegroundColor Yellow
     try {
         choco install git -y --force
-        Refresh-Environment
+        Refresh-Path
         
         if (Test-InstallationHealth "git" "git version") {
             $v = git --version 2>&1
@@ -194,6 +227,19 @@ if (Test-InstallationHealth "python" "Python") { Write-Host "  [OK] Python" -For
 if (Test-InstallationHealth "git" "git version") { Write-Host "  [OK] Git" -ForegroundColor Green } else { Write-Host "  [FAIL] Git" -ForegroundColor Red }
 
 Write-Host ""
-Write-Host "IMPORTANT: You may need to close and reopen ChatWise for PATH changes to take effect." -ForegroundColor Yellow
+Write-Host "=================================================" -ForegroundColor Yellow
+Write-Host "IMPORTANT: ChatWise Restart Required" -ForegroundColor Yellow
+Write-Host "=================================================" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "To ensure Python and Git are accessible in future sessions:" -ForegroundColor White
+Write-Host ""
+Write-Host "1. Close this ChatWise window completely" -ForegroundColor White
+Write-Host "2. Press Ctrl+Shift+Esc to open Task Manager" -ForegroundColor White
+Write-Host "3. End all 'chatwise.exe' processes" -ForegroundColor White
+Write-Host "4. Double-click 'ChatWise (Admin)' shortcut on your desktop" -ForegroundColor White
+Write-Host "5. Click 'Yes' when UAC prompt appears" -ForegroundColor White
+Write-Host "6. Return to this conversation" -ForegroundColor White
+Write-Host ""
+Write-Host "After restarting, Python and Git will be available in all new sessions." -ForegroundColor Green
 Write-Host ""
 pause
