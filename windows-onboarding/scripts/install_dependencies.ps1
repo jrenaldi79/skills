@@ -17,24 +17,49 @@ if (-not $isAdmin) {
     exit 1
 }
 
-Write-Host "✓ Running with Administrator privileges" -ForegroundColor Green
+Write-Host "[OK] Running with Administrator privileges" -ForegroundColor Green
 Write-Host ""
+
+# Function to refresh environment variables
+function Refresh-Environment {
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+    
+    # If Chocolatey is installed, import its profile for proper env refresh
+    if (Test-Path "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1") {
+        Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1" -ErrorAction SilentlyContinue
+        Update-SessionEnvironment -ErrorAction SilentlyContinue
+    }
+}
+# Function to verify a command is available
+function Test-CommandAvailable {
+    param([string]$Command)
+    $null -ne (Get-Command $Command -ErrorAction SilentlyContinue)
+}
 
 # Check if Chocolatey is installed
 Write-Host "Checking for Chocolatey..." -ForegroundColor Cyan
-$chocoInstalled = $null -ne (Get-Command choco -ErrorAction SilentlyContinue)
+$chocoInstalled = Test-CommandAvailable "choco"
 
 if ($chocoInstalled) {
-    Write-Host "✓ Chocolatey is already installed" -ForegroundColor Green
+    Write-Host "[OK] Chocolatey is already installed" -ForegroundColor Green
 } else {
     Write-Host "Installing Chocolatey..." -ForegroundColor Yellow
     Set-ExecutionPolicy Bypass -Scope Process -Force
     [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
     try {
         Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-        Write-Host "✓ Chocolatey installed successfully" -ForegroundColor Green
-    } catch {
-        Write-Host "ERROR: Failed to install Chocolatey" -ForegroundColor Red
+        
+        # Refresh environment to make choco available
+        Refresh-Environment
+        
+        # Verify Chocolatey is now available
+        if (Test-CommandAvailable "choco") {
+            Write-Host "[OK] Chocolatey installed successfully" -ForegroundColor Green
+        } else {
+            Write-Host "WARNING: Chocolatey installed but not available in PATH" -ForegroundColor Yellow
+            Write-Host "You may need to restart your terminal" -ForegroundColor Yellow
+        }
+    } catch {        Write-Host "ERROR: Failed to install Chocolatey" -ForegroundColor Red
         Write-Host $_.Exception.Message -ForegroundColor Red
         pause
         exit 1
@@ -43,23 +68,35 @@ if ($chocoInstalled) {
 
 Write-Host ""
 
-# Refresh environment variables
-$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+# Refresh environment variables after Chocolatey install
+Refresh-Environment
 
 # Check if Python is installed
 Write-Host "Checking for Python..." -ForegroundColor Cyan
-$pythonInstalled = $null -ne (Get-Command python -ErrorAction SilentlyContinue)
+$pythonInstalled = Test-CommandAvailable "python"
 
 if ($pythonInstalled) {
-    $pythonVersion = python --version 2>&1
-    Write-Host "✓ Python is already installed: $pythonVersion" -ForegroundColor Green
+    try {
+        $pythonVersion = python --version 2>&1
+        Write-Host "[OK] Python is already installed: $pythonVersion" -ForegroundColor Green
+    } catch {
+        Write-Host "WARNING: Python found but version check failed" -ForegroundColor Yellow
+    }
 } else {
     Write-Host "Installing Python..." -ForegroundColor Yellow
     try {
         choco install python -y
-        Write-Host "✓ Python installed successfully" -ForegroundColor Green
-        # Refresh PATH after Python installation
-        $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+        
+        # Refresh environment to make python available
+        Refresh-Environment
+                # Verify Python is now available
+        if (Test-CommandAvailable "python") {
+            $pythonVersion = python --version 2>&1
+            Write-Host "[OK] Python installed successfully: $pythonVersion" -ForegroundColor Green
+        } else {
+            Write-Host "WARNING: Python installed but not available in PATH" -ForegroundColor Yellow
+            Write-Host "You will need to restart your terminal" -ForegroundColor Yellow
+        }
     } catch {
         Write-Host "ERROR: Failed to install Python" -ForegroundColor Red
         Write-Host $_.Exception.Message -ForegroundColor Red
@@ -72,18 +109,30 @@ Write-Host ""
 
 # Check if Git is installed
 Write-Host "Checking for Git..." -ForegroundColor Cyan
-$gitInstalled = $null -ne (Get-Command git -ErrorAction SilentlyContinue)
+$gitInstalled = Test-CommandAvailable "git"
 
 if ($gitInstalled) {
-    $gitVersion = git --version 2>&1
-    Write-Host "✓ Git is already installed: $gitVersion" -ForegroundColor Green
-} else {
-    Write-Host "Installing Git..." -ForegroundColor Yellow
+    try {
+        $gitVersion = git --version 2>&1
+        Write-Host "[OK] Git is already installed: $gitVersion" -ForegroundColor Green
+    } catch {
+        Write-Host "WARNING: Git found but version check failed" -ForegroundColor Yellow
+    }
+} else {    Write-Host "Installing Git..." -ForegroundColor Yellow
     try {
         choco install git -y
-        Write-Host "✓ Git installed successfully" -ForegroundColor Green
-        # Refresh PATH after Git installation
-        $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+        
+        # Refresh environment to make git available
+        Refresh-Environment
+        
+        # Verify Git is now available
+        if (Test-CommandAvailable "git") {
+            $gitVersion = git --version 2>&1
+            Write-Host "[OK] Git installed successfully: $gitVersion" -ForegroundColor Green
+        } else {
+            Write-Host "WARNING: Git installed but not available in PATH" -ForegroundColor Yellow
+            Write-Host "You will need to restart your terminal" -ForegroundColor Yellow
+        }
     } catch {
         Write-Host "ERROR: Failed to install Git" -ForegroundColor Red
         Write-Host $_.Exception.Message -ForegroundColor Red
@@ -97,10 +146,9 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "Installation Complete!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "Installed components:" -ForegroundColor Cyan
-Write-Host "  ✓ Chocolatey package manager" -ForegroundColor Green
-Write-Host "  ✓ Python 3.x" -ForegroundColor Green
-Write-Host "  ✓ Git version control" -ForegroundColor Green
+Write-Host "Installed components:" -ForegroundColor CyanWrite-Host "  [OK] Chocolatey package manager" -ForegroundColor Green
+Write-Host "  [OK] Python 3.x" -ForegroundColor Green
+Write-Host "  [OK] Git version control" -ForegroundColor Green
 Write-Host ""
 Write-Host "IMPORTANT: You may need to close and reopen ChatWise for PATH changes to take effect." -ForegroundColor Yellow
 Write-Host ""
