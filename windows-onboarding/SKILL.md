@@ -83,23 +83,18 @@ mkdir C:\Users\{username}\skills\deliverables
 
 ### Step 4: Set Up Google Drive (Optional)
 
-If the user provided a Google Drive email, use the automated setup:
+The script now follows a robust, verify-first workflow to ensure accuracy.
 
-**Automated Setup (Recommended):**
-```powershell
-# Run as Administrator
-cd C:\Users\{username}\skills\windows-onboarding\scripts
-.\setup_gdrive.ps1
-```
+**Correct Order of Operations:**
+1.  **Collect User Info**: The script first asks for your name, username, and (optional) Google Drive email.
+2.  **Verify Google Drive First**: If an email is provided, the script *immediately* begins the Google Drive setup and verification process. It will:
+    - Display manual installation instructions and the download link.
+    - Pause and wait for you to confirm (`[y/n]`) that you have completed the installation and sign-in.
+3.  **Intelligently Find Path**: After your confirmation, a verification script runs to automatically find the correct Google Drive path on your system (e.g., `C:\Users\...` or a `G:\` drive).
+4.  **Create Folder & Test File**: The script then creates the `Skill-Deliverables` folder in the correct location and writes a test file to confirm sync is working.
+5.  **Generate Prompt Last**: Only *after* the Google Drive path has been successfully verified does the script generate the `system_prompt.md` and `user_config.json`, ensuring the paths written to them are 100% accurate.
 
-The script will:
-- Download and install Google Drive for Desktop
-- Create the Skill-Deliverables folder
-- Set up sync automatically
-- Only requires you to sign in via browser (OAuth)
-
-**Manual Setup:**
-If automated setup fails, see detailed guide in `references/gdrive_setup.md`
+This verify-first approach guarantees that your configuration files are generated correctly based on the actual, confirmed state of your system.
 
 ### Step 5: Install Skills
 
