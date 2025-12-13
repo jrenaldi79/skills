@@ -59,7 +59,8 @@ if ($chocoInstalled) {
             Write-Host "WARNING: Chocolatey installed but not available in PATH" -ForegroundColor Yellow
             Write-Host "You may need to restart your terminal" -ForegroundColor Yellow
         }
-    } catch {        Write-Host "ERROR: Failed to install Chocolatey" -ForegroundColor Red
+    } catch {
+        Write-Host "ERROR: Failed to install Chocolatey" -ForegroundColor Red
         Write-Host $_.Exception.Message -ForegroundColor Red
         pause
         exit 1
@@ -89,7 +90,8 @@ if ($pythonInstalled) {
         
         # Refresh environment to make python available
         Refresh-Environment
-                # Verify Python is now available
+        
+        # Verify Python is now available
         if (Test-CommandAvailable "python") {
             $pythonVersion = python --version 2>&1
             Write-Host "[OK] Python installed successfully: $pythonVersion" -ForegroundColor Green
@@ -118,7 +120,8 @@ if ($gitInstalled) {
     } catch {
         Write-Host "WARNING: Git found but version check failed" -ForegroundColor Yellow
     }
-} else {    Write-Host "Installing Git..." -ForegroundColor Yellow
+} else {
+    Write-Host "Installing Git..." -ForegroundColor Yellow
     try {
         choco install git -y
         
@@ -146,7 +149,8 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "Installation Complete!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "Installed components:" -ForegroundColor CyanWrite-Host "  [OK] Chocolatey package manager" -ForegroundColor Green
+Write-Host "Installed components:" -ForegroundColor Cyan
+Write-Host "  [OK] Chocolatey package manager" -ForegroundColor Green
 Write-Host "  [OK] Python 3.x" -ForegroundColor Green
 Write-Host "  [OK] Git version control" -ForegroundColor Green
 Write-Host ""
