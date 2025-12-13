@@ -1,5 +1,7 @@
 # Windows Onboarding - Dependency Installation Script
-# Installs Chocolatey, Python, and Git with robust verification and fallbacks
+# Installs Chocolatey, Python (Embeddable Strategy), and Git
+
+$ErrorActionPreference = "Stop"
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "Windows Onboarding - Dependency Installer" -ForegroundColor Cyan
@@ -25,51 +27,138 @@ Write-Host ""
 function Refresh-Path {
     Write-Host "Refreshing environment variables in current session..." -ForegroundColor DarkGray
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-    
-    if (Test-Path "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1") {
-        Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1" -ErrorAction SilentlyContinue
-        Update-SessionEnvironment -ErrorAction SilentlyContinue
-    }
 }
 
-function Test-InstallationHealth {
-    param([string]$Command, [string]$VersionPattern)
+function Remove-PythonCompletely {
+    Write-Host "Performing complete Python cleanup..." -ForegroundColor Cyan
     
-    # Level 1: Check if command exists
-    $cmd = Get-Command $Command -ErrorAction SilentlyContinue
-    if (-not $cmd) { return $false }
+    # Uninstall all Chocolatey Python packages
+    choco uninstall python python3 python312 python313 python314 -y --force 2>&1 | Out-Null
     
-    # Level 2: Verify executable file exists
-    if (-not (Test-Path $cmd.Source)) { return $false }
+    # Remove installation directories
+    $pythonDirs = @(
+        "C:\Python312",
+        "C:\Python313", 
+        "C:\Python314",
+        "C:\Program Files\Python312",
+        "C:\Program Files\Python313",
+        "C:\Program Files\Python314"
+    )
     
-    # Level 3: Test actual execution
-    try {
-        $output = & $Command --version 2>&1
-        if ($output -match $VersionPattern) {
-            return $true
+    foreach ($dir in $pythonDirs) {
+        if (Test-Path $dir) {
+            Write-Host "  Removing $dir..." -ForegroundColor Yellow
+            Remove-Item $dir -Recurse -Force -ErrorAction SilentlyContinue
         }
-    } catch {}
-    
-    return $false
-}
-
-function Cleanup-CorruptedInstall {
-    param([string]$PackageName)
-    Write-Host "Checking for corrupted $PackageName installation..." -ForegroundColor Yellow
-    
-    # Check for .ignore files which indicate failed Chocolatey installs
-    $ignoreFiles = Get-ChildItem "C:\ProgramData\chocolatey\lib\$PackageName*" -Recurse -Filter "*.ignore" -ErrorAction SilentlyContinue
-    
-    if ($ignoreFiles) {
-        Write-Host "[WARN] Detected corrupted $PackageName installation (found .ignore files). Cleaning up..." -ForegroundColor Yellow
-        choco uninstall $PackageName -y --force
-        choco uninstall "$PackageName.install" -y --force
-        Start-Sleep -Seconds 2
-        Refresh-Path
     }
+    
+    # Clean PATH
+    $currentPath = [System.Environment]::GetEnvironmentVariable('Path','Machine')
+    $cleanedPath = ($currentPath -split ";") | Where-Object { 
+        $_ -notlike "*Python*" 
+    } | Join-Object -Separator ";"
+    [System.Environment]::SetEnvironmentVariable('Path', $cleanedPath, 'Machine')
+    
+    Refresh-Path
+    Write-Host "[OK] Python cleanup complete" -ForegroundColor Green
 }
 
-# --- INSTALLATION LOGIC ---
+function Test-PythonInstallation {
+    param([string]$PythonPath)
+    
+    # Level 1: File exists
+    $exePath = "$PythonPath\python.exe"
+    if (-not (Test-Path $exePath)) {
+        Write-Host "[FAIL] Python executable not found at $exePath" -ForegroundColor Red
+        return $false
+    }
+    Write-Host "[OK] Python executable found" -ForegroundColor Green
+    
+    # Level 2: Executable runs
+    try {
+        $version = & $exePath --version 2>&1
+        if ($version -notmatch "Python \d+\.\d+\.\d+") {
+            Write-Host "[FAIL] Version check returned unexpected output: $version" -ForegroundColor Red
+            return $false
+        }
+        Write-Host "[OK] Python version check successful: $version" -ForegroundColor Green
+    } catch {
+        Write-Host "[FAIL] Python executable failed to run: $_" -ForegroundColor Red
+        return $false
+    }
+    
+    # Level 3: Standard library present (Embeddable zip usually has python312.zip, not Lib folder directly, but we check for import capability)
+    # Level 4: Can import and run simple script
+    $testScript = "import sys; import os; print('OK')"
+    try {
+        $result = & $exePath -c $testScript 2>&1
+        if ($result -ne "OK") {
+            Write-Host "[FAIL] Script execution test failed: $result" -ForegroundColor Red
+            return $false
+        }
+        Write-Host "[OK] Python can execute scripts and import standard modules" -ForegroundColor Green
+    } catch {
+        Write-Host "[FAIL] Script execution failed: $_" -ForegroundColor Red
+        return $false
+    }
+    
+    Write-Host "[SUCCESS] Python installation fully validated" -ForegroundColor Green
+    return $true
+}
+
+function Install-PythonEmbeddable {
+    $version = "3.12.0"
+    $zipUrl = "https://www.python.org/ftp/python/$version/python-$version-embed-amd64.zip"
+    $pythonPath = "C:\Python312"
+    
+    Write-Host "Downloading Python embeddable package ($version)..." -ForegroundColor Cyan
+    $zipPath = "$env:TEMP\python-embed.zip"
+    Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath
+    
+    Write-Host "Extracting to $pythonPath..." -ForegroundColor Cyan
+    if (Test-Path $pythonPath) { Remove-Item $pythonPath -Recurse -Force }
+    New-Item -ItemType Directory -Force -Path $pythonPath | Out-Null
+    Expand-Archive -Path $zipPath -DestinationPath $pythonPath -Force
+    Remove-Item $zipPath
+    
+    # Enable pip support by uncommenting 'import site' in ._pth file
+    $pthFile = "$pythonPath\python312._pth"
+    if (Test-Path $pthFile) {
+        $content = Get-Content $pthFile
+        $content = $content -replace '#import site', 'import site'
+        $content | Set-Content $pthFile
+    }
+    
+    # Download and install pip
+    Write-Host "Downloading get-pip.py..." -ForegroundColor Cyan
+    $getPipUrl = "https://bootstrap.pypa.io/get-pip.py"
+    $getPipPath = "$pythonPath\get-pip.py"
+    Invoke-WebRequest -Uri $getPipUrl -OutFile $getPipPath
+    
+    Write-Host "Installing pip..." -ForegroundColor Cyan
+    & "$pythonPath\python.exe" "$getPipPath" | Out-Null
+    Remove-Item "$getPipPath"
+    
+    # Add to PATH
+    $currentPath = [System.Environment]::GetEnvironmentVariable('Path','Machine')
+    if ($currentPath -notlike "*$pythonPath*") {
+        Write-Host "Adding Python to System PATH..." -ForegroundColor Cyan
+        $newPath = $currentPath + ";$pythonPath;$pythonPath\Scripts"
+        [System.Environment]::SetEnvironmentVariable('Path', $newPath, 'Machine')
+    }
+    
+    Refresh-Path
+    return $pythonPath
+}
+
+function Show-PythonDiagnostics {
+    Write-Host "`n=== PYTHON INSTALLATION DIAGNOSTICS ===" -ForegroundColor Yellow
+    Write-Host "PATH: $env:Path" -ForegroundColor DarkGray
+    Write-Host "Searching for python.exe..." -ForegroundColor Cyan
+    Get-ChildItem -Path "C:\" -Recurse -Filter "python.exe" -ErrorAction SilentlyContinue -Depth 3 | ForEach-Object { Write-Host "  Found: $($_.FullName)" -ForegroundColor Yellow }
+}
+
+# --- MAIN INSTALLATION LOGIC ---
 
 # 1. Chocolatey
 Write-Host "Checking for Chocolatey..." -ForegroundColor Cyan
@@ -82,16 +171,10 @@ if ($null -ne (Get-Command choco -ErrorAction SilentlyContinue)) {
     try {
         Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
         Refresh-Path
-        
-        if (Get-Command choco -ErrorAction SilentlyContinue) {
-            Write-Host "[OK] Chocolatey installed successfully" -ForegroundColor Green
-        } else {
-            throw "Chocolatey installed but not found in PATH"
-        }
+        if ($null -eq (Get-Command choco -ErrorAction SilentlyContinue)) { throw "Chocolatey installed but not found in PATH" }
+        Write-Host "[OK] Chocolatey installed successfully" -ForegroundColor Green
     } catch {
-        Write-Host "ERROR: Failed to install Chocolatey" -ForegroundColor Red
-        Write-Host $_.Exception.Message -ForegroundColor Red
-        pause
+        Write-Host "ERROR: Failed to install Chocolatey: $_" -ForegroundColor Red
         exit 1
     }
 }
@@ -99,92 +182,36 @@ if ($null -ne (Get-Command choco -ErrorAction SilentlyContinue)) {
 Refresh-Path
 Write-Host ""
 
-# 2. Python
+# 2. Python (Embeddable Strategy)
 Write-Host "Checking for Python..." -ForegroundColor Cyan
-Cleanup-CorruptedInstall "python"
 
-if (Test-InstallationHealth "python" "Python \d+\.\d+\.\d+") {
-    $v = python --version 2>&1
-    Write-Host "[OK] Python is working: $v" -ForegroundColor Green
-} else {
-    Write-Host "Installing Python..." -ForegroundColor Yellow
+# Check if already installed and working
+$existingPython = Get-Command python -ErrorAction SilentlyContinue
+$pythonWorking = $false
+if ($existingPython) {
+    if (Test-PythonInstallation -PythonPath ($existingPython.Source | Split-Path)) {
+        $pythonWorking = $true
+        Write-Host "[OK] Python is already installed and working" -ForegroundColor Green
+    }
+}
+
+if (-not $pythonWorking) {
+    # Clean up any broken installs first
+    Remove-PythonCompletely
+    
+    Write-Host "Installing Python (Embeddable Strategy)..." -ForegroundColor Yellow
     try {
-        choco install python -y --force
-        Refresh-Path
+        $pythonPath = Install-PythonEmbeddable
         
-        # Verify installation with retry loop
-        $pythonWorks = $false
-        $attempts = 0
-        $maxAttempts = 3
-        
-        while (-not $pythonWorks -and $attempts -lt $maxAttempts) {
-            Refresh-Path
-            if (Test-InstallationHealth "python" "Python \d+\.\d+\.\d+") {
-                $pythonWorks = $true
-            } else {
-                $attempts++
-                if ($attempts -lt $maxAttempts) {
-                    Write-Host "Verification attempt $attempts failed. Retrying..." -ForegroundColor Yellow
-                    Start-Sleep -Seconds 2
-                }
-            }
-        }
-        
-        if (-not $pythonWorks) {
-            Write-Host "[WARN] Chocolatey install failed verification. Attempting direct fallback..." -ForegroundColor Yellow
-            
-            # Fallback: Direct Download
-            $installerUrl = "https://www.python.org/ftp/python/3.12.0/python-3.12.0-amd64.exe"
-            $installerPath = "$env:TEMP\python-installer.exe"
-            
-            Write-Host "Downloading Python installer..." -ForegroundColor DarkGray
-            Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath
-            
-            Write-Host "Installing Python (this may take a minute)..." -ForegroundColor DarkGray
-            Start-Process -FilePath $installerPath -ArgumentList '/quiet', 'InstallAllUsers=1', 'PrependPath=1' -Wait
-            Remove-Item $installerPath
-            
-            # Manually add to PATH if needed
-            $pythonPath = "C:\Program Files\Python312"
-            if (Test-Path $pythonPath) {
-                $currentPath = [Environment]::GetEnvironmentVariable("Path", "Machine")
-                if ($currentPath -notmatch "Python312") {
-                    [Environment]::SetEnvironmentVariable("Path", "$currentPath;$pythonPath;$pythonPath\Scripts", "Machine")
-                }
-            }
-            Refresh-Path
-        }
-        
-        if (Test-InstallationHealth "python" "Python \d+\.\d+\.\d+") {
-            $v = python --version 2>&1
-            Write-Host "[OK] Python installed successfully: $v" -ForegroundColor Green
+        if (Test-PythonInstallation -PythonPath $pythonPath) {
+            Write-Host "[OK] Python installed successfully via embeddable package" -ForegroundColor Green
         } else {
-            # Check if it works with full path as last resort
-            $fullPath = "C:\Program Files\Python312\python.exe"
-            if (Test-Path $fullPath) {
-                 try {
-                    $v = & $fullPath --version 2>&1
-                    if ($v -match "Python \d+\.\d+\.\d+") {
-                        Write-Host "[WARNING] Python works with full path but not via PATH" -ForegroundColor Yellow
-                        Write-Host "[WARNING] You'll need to restart ChatWise for PATH to work" -ForegroundColor Yellow
-                    } else {
-                        throw "Python installation failed both methods"
-                    }
-                 } catch {
-                     throw "Python installation failed both methods"
-                 }
-            } else {
-                throw "Python installation failed both methods"
-            }
+            throw "Python installation failed verification"
         }
     } catch {
-        Write-Host "ERROR: Failed to install Python" -ForegroundColor Red
-        Write-Host $_.Exception.Message -ForegroundColor Red
-        
-        # Diagnostics
-        Write-Host "`nDIAGNOSTICS:" -ForegroundColor Yellow
-        Write-Host "PATH: $env:Path" -ForegroundColor DarkGray
-        Get-ChildItem "C:\ProgramData\chocolatey\lib\python*" -Recurse -Filter "*.ignore" | ForEach-Object { Write-Host "Found ignored file: $_.FullName" -ForegroundColor Red }
+        Write-Host "[FAIL] Python installation failed: $_" -ForegroundColor Red
+        Show-PythonDiagnostics
+        exit 1
     }
 }
 
@@ -192,39 +219,23 @@ Write-Host ""
 
 # 3. Git
 Write-Host "Checking for Git..." -ForegroundColor Cyan
-Cleanup-CorruptedInstall "git"
-
-if (Test-InstallationHealth "git" "git version") {
-    $v = git --version 2>&1
-    Write-Host "[OK] Git is working: $v" -ForegroundColor Green
+if ($null -ne (Get-Command git -ErrorAction SilentlyContinue)) {
+    Write-Host "[OK] Git is already installed" -ForegroundColor Green
 } else {
     Write-Host "Installing Git..." -ForegroundColor Yellow
     try {
         choco install git -y --force
         Refresh-Path
-        
-        if (Test-InstallationHealth "git" "git version") {
+        if ($null -ne (Get-Command git -ErrorAction SilentlyContinue)) {
             $v = git --version 2>&1
             Write-Host "[OK] Git installed successfully: $v" -ForegroundColor Green
         } else {
             throw "Git installed but failed verification"
         }
     } catch {
-        Write-Host "ERROR: Failed to install Git" -ForegroundColor Red
-        Write-Host $_.Exception.Message -ForegroundColor Red
+        Write-Host "ERROR: Failed to install Git: $_" -ForegroundColor Red
     }
 }
-
-Write-Host ""
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "Installation Complete!" -ForegroundColor Green
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host ""
-Write-Host "Final Status:" -ForegroundColor Cyan
-
-if (Test-InstallationHealth "choco" "Chocolatey") { Write-Host "  [OK] Chocolatey" -ForegroundColor Green } else { Write-Host "  [FAIL] Chocolatey" -ForegroundColor Red }
-if (Test-InstallationHealth "python" "Python") { Write-Host "  [OK] Python" -ForegroundColor Green } else { Write-Host "  [FAIL] Python" -ForegroundColor Red }
-if (Test-InstallationHealth "git" "git version") { Write-Host "  [OK] Git" -ForegroundColor Green } else { Write-Host "  [FAIL] Git" -ForegroundColor Red }
 
 Write-Host ""
 Write-Host "=================================================" -ForegroundColor Yellow
