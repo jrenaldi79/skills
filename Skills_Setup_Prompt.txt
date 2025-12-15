@@ -66,19 +66,30 @@ Clone the GitHub repository from https://github.com/jrenaldi79/skills. The user 
 
 ```powershell
 
-# Download and extract a GitHub repo
+# Download and extract a GitHub repo without creating a nested folder
 $repoUrl = "https://github.com/jrenaldi79/skills"
 $zipUrl = "$repoUrl/archive/refs/heads/main.zip"
+$tempZip = "$env:TEMP\repo.zip"
+$tempExtractDir = "$env:TEMP\skills-temp"
 $outputPath = "C:\Users\[my-username]\skills"
 
-# Ensure directory exists
-if (-not (Test-Path $outputPath)) { New-Item -ItemType Directory -Force -Path $outputPath }
+# 1. Download the zip file
+Invoke-WebRequest -Uri $zipUrl -OutFile $tempZip -UseBasicParsing
 
-Invoke-WebRequest -Uri $zipUrl -OutFile "$env:TEMP\repo.zip"
-Expand-Archive -Path "$env:TEMP\repo.zip" -DestinationPath "$env:TEMP\skills_extracted" -Force
-Copy-Item -Path "$env:TEMP\skills_extracted\skills-main\*" -Destination $outputPath -Recurse -Force
-Remove-Item "$env:TEMP\repo.zip"
-Remove-Item "$env:TEMP\skills_extracted" -Recurse -Force
+# 2. Create the final destination directory if it doesn't exist
+if (-not (Test-Path $outputPath)) { New-Item -Path $outputPath -ItemType Directory -Force }
+
+# 3. Extract the zip to a temporary location
+Expand-Archive -Path $tempZip -DestinationPath $tempExtractDir -Force
+
+# 4. Move the contents of the nested folder (e.g., skills-main) to the final destination
+# We assume the nested folder is the only item in the temp extraction directory
+$nestedFolder = Get-ChildItem -Path $tempExtractDir | Select-Object -First 1
+Move-Item -Path "$tempExtractDir\$($nestedFolder.Name)\*" -Destination $outputPath -Force
+
+# 5. Clean up temporary files and directories
+Remove-Item $tempZip -Force
+Remove-Item $tempExtractDir -Recurse -Force
 
 ```
 
