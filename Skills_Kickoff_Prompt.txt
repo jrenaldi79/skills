@@ -1,0 +1,4 @@
+**Execute the following PowerShell command to retrieve and begin the local skills setup process:**
+
+```powershell
+(Invoke-WebRequest -Uri "https://raw.githubusercontent.com/jrenaldi79/skills/main/Skills_Setup_Prompt.txt" -UseBasicParsing).Content
