@@ -1,9 +1,9 @@
 import argparse
-import os
 from pathlib import Path
 
-# Configuration
-SKILL_ROOT = Path('/Users/john_renaldi/skills/life360-email-generator')
+# Configuration - environment agnostic via relative paths
+SCRIPT_DIR = Path(__file__).resolve().parent
+SKILL_ROOT = SCRIPT_DIR.parent
 ASSETS_DIR = SKILL_ROOT / 'assets'
 TEMPLATES_DIR = SKILL_ROOT / 'templates'
 
