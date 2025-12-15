@@ -1,8 +1,20 @@
 I need you to help me set up my Windows machine with a skills library and onboard me to the system.
 
+**IMPORTANT INSTRUCTION FOR THE AGENT:**
+Throughout this process, you must act as a knowledgeable guide. Before executing any technical step, briefly explain **WHY** we are doing it in plain English. The user understands concepts like system prompts, agents, and markdown, but is not a software developer. Avoid deep technical jargon where possible, but don't oversimplify the core concepts.
+
+**INTRODUCTION: What are Skills?**
+Before starting Step 1, please explain to me what "Skills" are in this context. Use the following definition as a guide, but put it in your own words:
+"Skills are modular capabilities that we add to your AI agent (me). Think of them like installing apps on a phone, but for your AI. They consist of two parts:
+1. **System Prompts:** Instructions that teach me how to perform a specific task (like writing an email or analyzing data).
+2. **Scripts/Tools:** Small programs (usually in Python) that allow me to actually *do* things on your computer, like creating files, sending emails, or organizing folders.
+By setting up this environment, we are giving me the ability to run these tools safely and effectively on your machine."
+
 Please do the following steps IN ORDER:
 
 **STEP 1: Create Admin Verification Shortcuts**
+
+*Explain to the user:* "We need to create special shortcuts to ensure I have the necessary permissions to install software and modify system settings. One will be for regular use, and one specifically for administrative tasks."
 
 Create two desktop shortcuts for ChatWise (IMPORTANT, you MUST first check if they exist before creating them):
 
@@ -17,6 +29,8 @@ Once created, ask me to confirm I can see both shortcuts on my desktop before pr
 
 **STEP 2: Restart ChatWise as Administrator (CRITICAL)**
 
+*Explain to the user:* "To install the necessary tools (like Python and Git), I need to be running with Administrator privileges. This is a one-time requirement for the setup process."
+
 Once shortcuts are confirmed, instruct me to:
 
 1. Close this ChatWise window completely
@@ -27,6 +41,8 @@ Once shortcuts are confirmed, instruct me to:
 **DO NOT PROCEED BEYOND THIS POINT UNTIL I RETURN**
 
 **STEP 3: Verify Admin Privileges (MUST PASS)**
+
+*Explain to the user:* "I'm going to run a quick check to confirm that I successfully restarted with Admin rights before we try to install anything."
 
 Once I return, verify I'm running as administrator by running this PowerShell command:
 
@@ -44,24 +60,36 @@ If it returns "True", confirm "✓ Admin privileges verified" and proceed to Ste
 
 **STEP 4: Clone Skills Repository**
 
+*Explain to the user:* "Now I'm going to download the 'Skills Library' from GitHub. This is a collection of prompts and scripts that we will use to upgrade my capabilities."
+
 Clone the GitHub repository from https://github.com/jrenaldi79/skills. The user doesn't have Git so you must use something similar to: using Git:
 
 ```powershell
 
 # Download and extract a GitHub repo
-$repoUrl = "https://github.com/username/repository"
-$zipUrl = "$repoUrl/archive/refs/heads/main.zip"  # or "master" instead of "main"
-$outputPath = "C:\path\to\destination"
+$repoUrl = "https://github.com/jrenaldi79/skills"
+$zipUrl = "$repoUrl/archive/refs/heads/main.zip"
+$outputPath = "C:\Users\[my-username]\skills"
+
+# Ensure directory exists
+if (-not (Test-Path $outputPath)) { New-Item -ItemType Directory -Force -Path $outputPath }
 
 Invoke-WebRequest -Uri $zipUrl -OutFile "$env:TEMP\repo.zip"
-Expand-Archive -Path "$env:TEMP\repo.zip" -DestinationPath $outputPath -Force
+Expand-Archive -Path "$env:TEMP\repo.zip" -DestinationPath "$env:TEMP\skills_extracted" -Force
+Copy-Item -Path "$env:TEMP\skills_extracted\skills-main\*" -Destination $outputPath -Recurse -Force
 Remove-Item "$env:TEMP\repo.zip"
+Remove-Item "$env:TEMP\skills_extracted" -Recurse -Force
 
 ```
 
-Make sure the zip file is unzipped and placed into the C:\Users\[my-username]\skills directory
+Make sure the zip file is unzipped and placed into the C:\Users\[my-username]\skills directory.
 
 **STEP 5: Install Dependencies (Python & Git)**
+
+*Explain to the user:* "To run the 'Skills' (specifically the scripts part), I need two standard tools installed on your machine:
+1. **Python:** The programming language that most of our skills are written in.
+2. **Git:** A tool that helps us keep your skills library up to date.
+I will run a script to install these for you automatically."
 
 Run the dependency installation script to install Chocolatey, Python, and Git. But always check with the user before proceeding to running scripts. You must never rewrite these scripts. You should only execute them.
 
@@ -119,6 +147,8 @@ Wait for the script to complete. If it asks me to close and reopen ChatWise for 
 
 **STEP 6: Run Windows Onboarding Script**
 
+*Explain to the user:* "Now that the tools are installed, I'm going to run a configuration script. This script will ask you a few questions (like your name) to customize the system prompt specifically for you. This ensures that when you use skills later, they know who you are and where your files are located."
+
 Once dependencies are installed, run/execute the Windows onboarding adapter script:
 
 ```powershell
@@ -156,4 +186,4 @@ Once all steps are complete, provide me with:
 - Location of the generated system_prompt.md file
 - Next steps for applying the system prompt to my ChatWise configuration
 
-Please start with Step 1 now.
+Please start with the Introduction and Step 1 now.
