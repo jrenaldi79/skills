@@ -1,7 +1,7 @@
 # Windows Onboarding - Dependency Installation Script
 # Installs Chocolatey, Python (Embeddable Strategy), and Git
 
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "Windows Onboarding - Dependency Installer" -ForegroundColor Cyan
@@ -30,38 +30,52 @@ function Refresh-Path {
 }
 
 function Remove-PythonCompletely {
-    Write-Host "Performing complete Python cleanup..." -ForegroundColor Cyan
-    
-    # Uninstall all Chocolatey Python packages
-    choco uninstall python python3 python312 python313 python314 -y --force 2>&1 | Out-Null
-    
-    # Remove installation directories
-    $pythonDirs = @(
-        "C:\Python312",
-        "C:\Python313", 
-        "C:\Python314",
-        "C:\Program Files\Python312",
-        "C:\Program Files\Python313",
-        "C:\Program Files\Python314"
-    )
-    
-    foreach ($dir in $pythonDirs) {
-        if (Test-Path $dir) {
-            Write-Host "  Removing $dir..." -ForegroundColor Yellow
-            Remove-Item $dir -Recurse -Force -ErrorAction SilentlyContinue
+    try {
+        Write-Host "Performing complete Python cleanup..." -ForegroundColor Cyan
+        
+        # Uninstall all Chocolatey Python packages
+        choco uninstall python python3 python312 python313 python314 -y --force 2>&1 | Out-Null
+        
+        # Remove installation directories
+        $pythonDirs = @(
+            "C:\Python312",
+            "C:\Python313", 
+            "C:\Python314",
+            "C:\Program Files\Python312",
+            "C:\Program Files\Python313",
+            "C:\Program Files\Python314"
+        )
+        
+        foreach ($dir in $pythonDirs) {
+            if (Test-Path $dir) {
+                Write-Host "  Removing $dir..." -ForegroundColor Yellow
+                Remove-Item $dir -Recurse -Force -ErrorAction SilentlyContinue
+            }
         }
+        
+        # Clean PATH with error handling
+        try {
+            $currentPath = [System.Environment]::GetEnvironmentVariable('Path','Machine')
+            
+            if ([string]::IsNullOrWhiteSpace($currentPath)) {
+                Write-Host "[WARNING] PATH is empty, skipping cleanup" -ForegroundColor Yellow
+            } else {
+                $pathParts = ($currentPath -split ";") | Where-Object { 
+                    $_ -notlike "*Python*" 
+                }
+                $cleanedPath = $pathParts -join ";"
+                [System.Environment]::SetEnvironmentVariable('Path', $cleanedPath, 'Machine')
+            }
+        } catch {
+            Write-Host "[WARNING] Could not clean PATH automatically: $_" -ForegroundColor Yellow
+            Write-Host "Python may still work. Continuing..." -ForegroundColor Yellow
+        }
+        
+        Refresh-Path
+        Write-Host "[OK] Python cleanup complete" -ForegroundColor Green
+    } catch {
+        Write-Host "[WARNING] Cleanup encountered issues but continuing: $_" -ForegroundColor Yellow
     }
-    
-    # Clean PATH
-    $currentPath = [System.Environment]::GetEnvironmentVariable('Path','Machine')
-    $pathParts = ($currentPath -split ";") | Where-Object { 
-        $_ -notlike "*Python*" 
-    }
-    $cleanedPath = $pathParts -join ";"
-    [System.Environment]::SetEnvironmentVariable('Path', $cleanedPath, 'Machine')
-    
-    Refresh-Path
-    Write-Host "[OK] Python cleanup complete" -ForegroundColor Green
 }
 
 function Test-PythonInstallation {
