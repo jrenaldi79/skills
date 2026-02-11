@@ -1,193 +1,196 @@
 ---
-name: runpod-blender
+name: blender-product-render
 description: >
-  Manage RunPod GPU pods for remote Blender sessions. Use when the user wants to:
-  start/stop a cloud GPU for Blender, set up a remote Blender session, connect to
-  RunPod, render on a cloud GPU, or mentions "runpod", "remote blender", "cloud GPU",
-  or "blender session". Also handles first-time workspace setup, project scaffolding,
-  pod lifecycle, SSH tunneling, VNC setup, and blender-mcp configuration.
+  Photorealistic product rendering in Blender via MCP — locally or on cloud GPUs (RunPod).
+  Triggers: "render", "3D visualization", "product shot", "Blender scene", "photorealistic",
+  "mockup", "lighting", "materials", "install Blender", "set up Blender MCP", "configure Blender",
+  "Blender connection", "runpod", "remote blender", "cloud GPU", "blender session",
+  or any first-time onboarding — even if the user doesn't explicitly say "use this skill."
 ---
 
-# RunPod Blender Session Manager
+# Blender Product Render Skill
 
-## Configuration
+Create photorealistic product renders by executing Blender Python (`bpy`) scripts through the Blender MCP — locally or on cloud GPUs (RunPod). This skill enforces a systematic workflow: clean scene -> build geometry -> apply materials -> light -> compose -> iterate -> deliver.
 
-All secrets live in `~/blender-files/runpod/.env` (never committed to git):
-```
-RUNPOD_API_KEY=rpa_...
-RUNPOD_POD_ID=abc123
-VNC_PASSWORD=blender123
-```
+---
 
-The script auto-discovers `.env` from the working directory or `~/blender-files/runpod/.env`.
-SSH key is at `~/.runpod/ssh/RunPod-Key-Go`.
+## When to Read Reference Files
 
-## Scripts
+Before starting any task, read the references relevant to your current phase:
 
-- `scripts/runpod_manager.py` — Pod lifecycle (start, stop, status, ssh-info, create). Reads from `.env` automatically.
-- `scripts/pod_setup.sh` — First-time pod setup (installs Blender + deps to `/runpod`)
+| Phase | Read This |
+|-------|-----------|
+| First-time setup / installation | `references/onboarding-setup.md` |
+| Scene setup, lighting, camera | `references/rendering-standards.md` |
+| Applying materials, texturing | `references/materials-and-products.md` |
+| Render is wrong (black, blown out, noisy) | `references/debugging.md` |
+| RunPod pod lifecycle, SSH, VNC, file transfer | `references/runpod-infrastructure.md` |
 
-## First-Time Workspace Setup
+If the user has never set up Blender MCP before, read **onboarding-setup.md** first and walk them through installation. Otherwise, read **rendering-standards.md** first on every render task. Read the others as needed.
 
-Run this when a student says "set up RunPod for Blender" and has no existing workspace.
+---
 
-1. Create directory structure:
-   ```
-   mkdir -p ~/blender-files/runpod/projects
-   mkdir -p ~/blender-files/runpod/skill/scripts
-   ```
-2. Copy skill files into `~/blender-files/runpod/skill/` (SKILL.md, scripts/)
-3. Initialize git:
-   ```
-   cd ~/blender-files/runpod && git init
-   ```
-4. Create `.gitignore` (exclude `.env`, `.DS_Store`, `*.blend1`, `__pycache__/`)
-5. Create `.env` from the template (`skill/.env.example`):
-   - Ask the user for their RunPod API key
-   - Write it to `~/blender-files/runpod/.env`
-   - Leave `RUNPOD_POD_ID` blank (filled after pod creation)
-6. Proceed to **First-Time Pod Setup** below
+## Environment Detection
 
-## First-Time Pod Setup
+Determine whether the user is rendering locally or on a cloud GPU:
 
-1. Read API key from `.env`
-2. Create pod:
-   ```
-   python3 SKILL_DIR/scripts/runpod_manager.py create --env-file ~/blender-files/runpod/.env
-   ```
-3. Extract pod ID from JSON output
-4. **Save pod ID** to `.env`:
-   - Update `RUNPOD_POD_ID=<new_pod_id>` in `~/blender-files/runpod/.env`
-5. Wait for SSH, then pipe setup script:
-   ```
-   ssh -o StrictHostKeyChecking=no -i ~/.runpod/ssh/RunPod-Key-Go root@IP -p PORT \
-     < SKILL_DIR/scripts/pod_setup.sh
-   ```
-6. Commit initial setup:
-   ```
-   cd ~/blender-files/runpod && git add -A && git commit -m "Initial RunPod Blender setup"
-   ```
+- **Cloud path:** User mentions "RunPod", "cloud GPU", "remote", "pod", or "cloud session" -> read `references/runpod-infrastructure.md` for session management.
+- **Local path:** User mentions "local", "my machine", or Blender MCP tools respond directly without SSH -> proceed with local workflow.
+- **Unclear:** Ask the user: "Are you rendering locally or on a cloud GPU (RunPod)?"
 
-## Start a Session
+Even on the cloud path, the MCP server runs locally and tunnels to the remote Blender instance. See `references/onboarding-setup.md` for full setup details.
 
-1. Read `.env` (api key, pod ID, VNC password)
-2. Start pod:
-   ```
-   python3 SKILL_DIR/scripts/runpod_manager.py start --env-file ~/blender-files/runpod/.env
-   ```
-3. Extract SSH ip/port from JSON output
-4. Run startup script on pod:
-   ```
-   ssh -o StrictHostKeyChecking=no -i ~/.runpod/ssh/RunPod-Key-Go root@IP -p PORT \
-     "bash /runpod/start_session.sh" 2>&1 | tail -10
-   ```
-5. Set up SSH tunnel:
-   ```
-   pkill -f "ssh.*-L 9876.*-L 5900" 2>/dev/null
-   ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
-     -i ~/.runpod/ssh/RunPod-Key-Go -N -f \
-     -L 9876:localhost:9876 -L 5900:localhost:5900 -L 6080:localhost:6080 root@IP -p PORT
-   ```
-6. Tell user: open **http://localhost:6080/vnc.html** in their browser to view Blender live. Enter the VNC password from `.env` when prompted. MCP server auto-starts on port 9876 — no manual addon activation needed.
+---
 
-## Stop a Session
+## Onboarding: First-Time Setup
 
-1. `python3 SKILL_DIR/scripts/runpod_manager.py stop --env-file ~/blender-files/runpod/.env`
-2. `pkill -f "ssh.*-L 9876.*-L 5900.*-L 6080" 2>/dev/null`
-3. Confirm pod stopped and billing ended
+If the user hasn't set up Blender MCP yet — or if Blender tools aren't responding — read `references/onboarding-setup.md` and walk them through the full installation.
 
-## Check Status
+**Trigger phrases:** "set up Blender", "install Blender MCP", "how do I get started", "Blender tools aren't working", "connection error", "set up RunPod", or any indication this is the user's first time.
 
-```
-python3 SKILL_DIR/scripts/runpod_manager.py status --env-file ~/blender-files/runpod/.env
-```
+**Supported clients:** Claude Desktop, ChatWise, and Claude Code. The onboarding guide detects which client is installed and configures accordingly.
 
-## New Project
+**Supported environments:** Local rendering and cloud GPU rendering (RunPod). The guide branches based on the user's choice.
 
-When the user starts a new Blender project:
+---
 
-1. Create project directory:
-   ```
-   mkdir -p ~/blender-files/runpod/projects/<project-name>
-   ```
-2. This is the working directory for render scripts, .blend files, output renders, and assets for that project.
+## Workflow Overview
 
-## Rendering Workflow
+Every product render follows this sequence. Do not skip steps.
 
-There are two render tiers. Use **checkpoint renders** during iterative design work, and **final renders** only when the design is locked.
+### Step 0: Environment Setup
 
-### Checkpoint Renders (< 1 MB)
+**Cloud (RunPod):**
+1. Read `references/runpod-infrastructure.md`.
+2. Start the pod, run the startup script, establish SSH tunnel.
+3. Verify MCP connection with `get_scene_info`.
 
-Use these for all design iteration and LLM image analysis. Large images cause context/token issues and slow down feedback loops.
+**Local:**
+1. Verify Blender is running and the MCP addon shows "Connected".
+2. Verify MCP connection with `get_scene_info`.
 
-Settings — apply before render, restore originals after:
+### Step 1: Scene Initialization
+
+Always begin by clearing the default scene. Leftover objects, lights, and cameras cause conflicts.
+
 ```python
-render.resolution_x = 1024
-render.resolution_y = 1024
-render.resolution_percentage = 100
-scene.cycles.samples = 64
-render.image_settings.file_format = 'JPEG'
-render.image_settings.quality = 85
-render.filepath = "/runpod/projects/<project>/checkpoint_render.jpg"
-```
-This typically produces files around 100–300 KB.
-
-### Final Renders
-
-Use full resolution and samples only when the design is approved. Output as PNG for quality.
-
-### Workflow
-
-1. **Checkpoint render** with the settings above
-2. SCP to local project directory (see **File Transfer** section)
-3. **Always open locally** with `open <path>` so the user can see it
-4. Read the image with the Read tool to analyze it alongside the user
-5. Iterate with checkpoint renders until the design is approved
-6. **Final render** at full resolution/samples, SCP + open locally
-
-## File Transfer
-
-All file transfers between the pod and local machine use SCP with the RunPod SSH key. Do NOT use blender-mcp for file transfers — it's too slow for anything beyond small text.
-
-**Get SSH connection info first:**
-```
-python3 SKILL_DIR/scripts/runpod_manager.py status --env-file ~/blender-files/runpod/.env
-```
-Extract the SSH `ip` and `port` from the JSON output (the entry with `privatePort: 22`).
-
-**Download from pod to local:**
-```
-scp -i ~/.runpod/ssh/RunPod-Key-Go -P PORT -o StrictHostKeyChecking=no \
-  root@IP:/runpod/path/to/file ~/blender-files/runpod/projects/<project>/file
+import bpy
+bpy.ops.object.select_all(action='SELECT')
+bpy.ops.object.delete(use_global=False)
+world = bpy.data.worlds.get("World") or bpy.data.worlds.new("World")
+bpy.context.scene.world = world
+world.use_nodes = True
+world.node_tree.nodes.clear()
+bg = world.node_tree.nodes.new('ShaderNodeBackground')
+output = world.node_tree.nodes.new('ShaderNodeOutputWorld')
+world.node_tree.links.new(bg.outputs[0], output.inputs[0])
 ```
 
-**Upload from local to pod:**
-```
-scp -i ~/.runpod/ssh/RunPod-Key-Go -P PORT -o StrictHostKeyChecking=no \
-  ~/blender-files/runpod/projects/<project>/file root@IP:/runpod/path/to/file
-```
+Set units to Metric, scene scale to 1.0.
 
-## Save / Download Project
+### Step 2: Build or Import Geometry
 
-To save a Blender project locally (for backup, version control, or loading later):
+- Model the product or import an existing asset (Poly Haven, Sketchfab, Hyper3D).
+- Ensure real-world scale: a phone is ~0.15m, a mug is ~0.10m, a chair seat is ~0.45m.
+- Apply bevel modifiers to hard-surface objects (see `references/rendering-standards.md` for width by object size).
 
-1. Save the .blend file on the pod via blender-mcp:
-   ```python
-   import bpy, os
-   os.makedirs("/runpod/projects/<project>", exist_ok=True)
-   bpy.ops.wm.save_as_mainfile(filepath="/runpod/projects/<project>/<name>.blend")
-   ```
-2. SCP the .blend file to the local project directory (see **File Transfer** above)
-3. To reload later, upload the .blend file back to the pod and open it:
-   ```python
-   bpy.ops.wm.open_mainfile(filepath="/runpod/projects/<project>/<name>.blend")
-   ```
+### Step 3: Apply Materials
 
-## Key Details
+Read `references/materials-and-products.md` before assigning any material. Key principles:
+- Use Principled BSDF for everything.
+- Add micro-roughness imperfections — real surfaces are never perfectly smooth.
+- Never use pure black (0,0,0) for dark materials.
+- Consult the product-type table for glass, metal, plastic, fabric, leather, and ceramic.
 
-- Only `/runpod` persists across pod restarts. Apt packages and `/root` config are ephemeral.
-- The startup script on the pod (`/runpod/start_session.sh`) handles reinstalling deps.
-- SSH IP and port change every restart — always query fresh via the API.
-- The blender-mcp addon and socket server auto-start via `/runpod/autostart_mcp.py`.
-- The local MCP server is configured in `~/blender-files/runpod/.mcp.json` (uses `uvx blender-mcp`).
-- Secrets go in `.env`, never in scripts or markdown. The `.env` file is git-ignored.
+### Step 4: Light the Scene
+
+Read `references/rendering-standards.md` for the full lighting protocol.
+
+**Critical first step:** Call `get_polyhaven_status` before attempting any HDRI download.
+
+- If Poly Haven is available -> use a studio HDRI.
+- If Poly Haven is unavailable -> build a 3-point light rig (details in reference file).
+
+Rotate the HDRI or key light until rim highlights separate the object from the background.
+
+### Step 5: Set Up Camera
+
+- Focal length: 50mm-85mm for product shots.
+- Frame the object at ~70-80% of the image area.
+- Enable depth of field (f/2.8-f/5.6) for hero shots.
+- Place the object on a contextual ground plane (wood, concrete, fabric, or seamless sweep).
+- Rotate the object slightly off-axis for a natural, non-CAD appearance.
+
+### Step 6: Test Render -> Evaluate -> Iterate
+
+This is the critical loop. Render small, evaluate fast, fix issues, repeat.
+
+**Test render settings (environment-aware):**
+
+| Setting | Local | Cloud (RunPod) |
+|---------|-------|----------------|
+| Resolution | 1280x720 | 1024x1024 |
+| Samples | 48 | 64 |
+| Format | PNG | JPEG 85% |
+| File size goal | < 1 MB | < 300 KB |
+| Denoising | Enabled | Enabled |
+
+**Cloud:** After rendering, SCP the checkpoint image to the local project directory, then open locally with `open <path>`. Read the image to analyze. Save and restore original render settings after checkpoint.
+
+**Evaluation checklist — check all six before proceeding:**
+
+1. **Framing** — Object fully visible, filling ~70-80% of frame?
+2. **Edge highlights** — Specular highlights catching edges, separating object from background?
+3. **Shadow grounding** — Shadows anchoring the object to the surface?
+4. **Exposure balance** — No blown-out whites or crushed blacks?
+5. **Material read** — Can you clearly distinguish different materials?
+6. **Composition** — Placement feels natural, not rigidly centered?
+
+If any criterion fails, diagnose and fix before re-rendering. If the render is black, white, or missing the object entirely, go to `references/debugging.md`.
+
+### Step 7: Final Delivery
+
+Only after all six evaluation criteria pass and the user approves the composition:
+
+- Resolution: 1920x1080 (HD) or 3840x2160 (4K).
+- Samples: 256-1024.
+- Save to disk for the user. **DO NOT** feed final renders back into the chat context — they will overflow.
+
+**Cloud:** SCP the final render to the local project directory, then open locally.
+
+### Step 8: Save and Cleanup
+
+**Cloud (RunPod):**
+1. Save the .blend file on the pod (see `references/runpod-infrastructure.md` Save / Download Project).
+2. SCP the .blend file to the local project directory.
+3. Stop the pod to end billing.
+
+**Local:**
+1. Save the .blend file to the project directory.
+
+---
+
+## Key Rules (Always in Effect)
+
+1. **Always use Cycles.** Eevee cannot produce the light bounce accuracy needed for photorealism.
+2. **Always check Poly Haven status** before downloading HDRIs or textures.
+3. **Always screenshot the viewport** (`get_viewport_screenshot`) before a full render if something looks wrong — it's faster and catches most spatial issues.
+4. **Never skip the bevel modifier** on hard-surface objects. Sharp edges don't exist in reality and kill photorealism.
+5. **Keep test renders small.** Context overflow from large images breaks the iterative loop.
+6. **Break scripts into small steps.** Execute one logical operation per `execute_blender_code` call — don't try to build an entire scene in a single script. This makes debugging dramatically easier.
+7. **Always stop the pod when done** (cloud only). It charges ~$0.28/hr.
+8. **Always query fresh SSH info** before SCP or tunnel commands (cloud only). IP and port change on every pod restart.
+9. **Use SCP for file transfers** (cloud only). Do not use blender-mcp for file transfers — it's too slow.
+10. **Save checkpoint renders as JPEG** (cloud only). PNG files are too large for efficient SCP transfer and LLM analysis.
+
+---
+
+## Output Deliverables (Capstone Context)
+
+For academic or capstone projects, each product visualization should produce:
+
+1. **Final render(s):** High-resolution PNG at HD or 4K.
+2. **Blender file (.blend):** Complete scene with materials, lighting, and camera preserved.
+3. **Design rationale:** 3-5 sentences explaining the lighting strategy, material choices, and composition decisions — connecting them to the visual outcome.
+
+This ensures the project demonstrates intentional design thinking, not just tool proficiency.
