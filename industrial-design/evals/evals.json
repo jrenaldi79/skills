@@ -1,0 +1,47 @@
+{
+  "skill_name": "industrial-design",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I want to design a magnetic torpedo level for construction workers. It should be about 9 inches, made of aluminum with rubber overmold end caps, and retail around $25-35. Target market is US and Canada. Competitors include the Stabila 81S and Empire em81.9.",
+      "expected_output": "The agent should run through Phase 1 (intake, clarifying questions, capability check) and begin Phase 2 (research). It should NOT skip the capability check. It should ask at least 2 clarifying questions before diving into research.",
+      "files": [],
+      "assertions": [
+        "The agent identifies itself as an industrial designer and references the skill's identity/persona",
+        "The agent performs or references a capability check before starting research",
+        "The agent asks at least 2 clarifying questions about the brief (e.g., production volume, distribution, specific feature priorities)",
+        "The agent identifies missing fields from the brief template (e.g., production volume, distribution channel)",
+        "The agent does NOT skip directly to generating sketches or renders",
+        "The agent does NOT fabricate competitor specs without citing sources or labeling them as assumptions"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Design me a premium hand trowel for professional masons. I want something that stands out from the Marshalltown and Bon Tool offerings. Budget is $40-60 retail, forged steel blade, comfortable grip for all-day use. US market only. 10,000 units/year.",
+      "expected_output": "The agent should process the brief, identify it as relatively complete, ask a few targeted clarifying questions, and proceed through research workstreams. It should organize outputs as artifacts with proper naming.",
+      "files": [],
+      "assertions": [
+        "The agent recognizes the brief is mostly complete and asks targeted rather than broad clarifying questions",
+        "The agent references or creates artifacts using the P[Phase]-[Type]-[Sequence] naming convention",
+        "The agent considers ergonomics explicitly (comfort, grip, balance for all-day use)",
+        "The agent addresses DFM considerations relevant to forged steel (forging process, heat treatment, surface finishing)",
+        "Any material or cost claims are labeled as Verified, User Requirement, or Proposed Target",
+        "The agent mentions or considers relevant standards/compliance for hand tools in the US market"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I have a product idea for a modular scaffolding connector — a single aluminum casting that replaces the 3 different clamp types currently used on tube scaffolding. I don't have competitors identified yet and I'm not sure about pricing. Help me figure this out.",
+      "expected_output": "The agent should handle an intentionally vague brief by asking smart clarifying questions, filling in the brief template, and initiating competitive research to discover the landscape. It should be especially careful about safety given the scaffolding context.",
+      "files": [],
+      "assertions": [
+        "The agent recognizes the brief is highly incomplete and asks substantive clarifying questions (target markets, production volume, load requirements, certification needs)",
+        "The agent emphasizes safety considerations given this is scaffolding equipment (fall protection, load-bearing, structural standards)",
+        "The agent identifies relevant standards without being prompted (e.g., OSHA scaffolding standards, EN 12811, BS EN 74)",
+        "The agent does NOT present invented load ratings or material strengths as facts",
+        "The agent suggests or initiates competitive research to discover existing universal scaffolding connectors",
+        "The agent references the capability check and states which tools/modes are available"
+      ]
+    }
+  ]
+}

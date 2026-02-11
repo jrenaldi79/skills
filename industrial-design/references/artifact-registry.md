@@ -1,0 +1,66 @@
+# Artifact Registry & Deliverables
+
+## Artifact Management Rules
+
+1. Every artifact gets a unique ID: `P[Phase#]-[Type]-[Sequence]`
+2. Save every artifact as a file in `./artifacts/` (images in `./artifacts/images/`)
+3. Reference previous artifacts by ID when making decisions
+4. Maintain `./artifacts/artifact-index.md` and update at the end of each phase
+
+## Artifact Index Format
+
+```markdown
+## Artifact Index
+| ID | Phase | Type | Description | Fidelity | DTS Result | File |
+|---|---|---|---|---|---|---|
+| P2-COMP-01 | 2 | Competitive Analysis | Landscape board: 5 competitors | Doc | N/A | ./artifacts/P2-COMP-01.md |
+| P3-SKETCH-01 | 3 | Concept Sketch | "Flip Scale" — orthographic views | L1 | PASS | ./artifacts/P3-SKETCH-01.html |
+```
+
+---
+
+## Required Artifact Types by Phase
+
+### Phase 2: Research
+- `P2-COMP-01` — Competitive Landscape Board
+- `P2-MATINNO-01` — Material Innovation Notes
+- `P2-STANDARDS-01` — Standards & Compliance Summary
+- `P2-VISREF-01` — Visual Reference Collection
+- `P2-IMG-*` — Downloaded reference images
+
+### Phase 3: Ideation
+- `P3-SKETCH-*` — Concept sketches (one per concept)
+
+### Phase 4: Refinement
+- `P4-MOOD-01` — Mood Board (HTML)
+- `P4-MATBOARD-01` — Material Selection Board
+- `P4-IMG-RENDER-*` — Inspiration renders
+- `P4-DIMSKETCH-01` — Dimensioned sketch
+
+### Phase 5: FMEA
+- `P5-FMEA-01` — Failure Mode Analysis
+
+### Phase 6: Final Specification
+- `P6-TECHDRAW-01` — Technical Drawing (L3)
+- `P6-HERORENDER-01` — Hero Render
+- `P6-SPECSHEET-01` — Complete Specification Sheet
+
+---
+
+## Parametric "Design Source of Truth" Files
+
+To keep the design consistent across phases (like a codebase), maintain these machine-readable files:
+
+### 1. `./artifacts/design-parameters.yaml` (Required)
+Contains: overall dimensions, part thicknesses, radii/fillets, draft angles, clearances, datum references, mass targets.
+
+### 2. `./artifacts/materials-and-finishes.yaml` (Required)
+Contains: allowed materials, finish specs, color codes, texture/grip specs, regulatory constraints, supplier notes if available.
+
+### 3. `./artifacts/decision-log.md` (Required)
+Contains: dated entries recording what changed, why, what artifact informed the decision, and trade-offs considered.
+
+### Rules
+- Update these files whenever a dimension, material, or finish decision changes
+- The final spec must match these files. If a conflict exists, resolve it and log the resolution
+- All values must comply with the spec integrity policy (see `engineering-standards.md`)
