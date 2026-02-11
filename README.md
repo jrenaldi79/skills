@@ -24,7 +24,8 @@ skills/
 ├── deep-research/          # Research report generation
 ├── life360-brand/          # Life360 brand guidelines
 ├── life360-email-generator/# Life360 email templates
-└── web-sentiment-monitor/  # Sentiment analysis
+├── web-sentiment-monitor/  # Sentiment analysis
+└── runpod-blender/         # 3D product rendering (local + cloud GPU)
 ```
 
 Each skill directory contains:
@@ -80,6 +81,11 @@ Automatically generates on-brand HTML emails for Life360 corporate communication
 Monitors web sentiment and media coverage for brands, products, or topics. Tracks mentions, sentiment trends, and media analysis.
 
 **Use for:** Brand monitoring, sentiment analysis, media tracking
+
+#### runpod-blender
+Photorealistic product rendering in Blender via Claude Code, locally or on cloud GPUs (RunPod). Covers the full workflow from geometry to final 4K delivery, with PBR material recipes, studio lighting, and iterative evaluation.
+
+**Use for:** 3D product visualization, concept renders, hardware prototyping, capstone projects
 
 ## Installation
 
