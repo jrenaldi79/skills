@@ -90,25 +90,44 @@ lead agent. In particular:
 
 When delegating to subagents, the lead agent should:
 1. Pass the absolute output file path (not relative)
-2. Instruct the subagent to embed image URLs directly, not download them
+2. Instruct the subagent to collect image URLs and embed them as external `<img src>` placeholders
+   (the lead agent will post-process these into base64 data URIs — see Image Embedding Strategy)
 3. Verify the subagent's output after it completes (see Verification below)
 
 **After all subagents complete:**
 1. Read each output artifact
 2. Cross-reference findings (e.g., do material choices align with standards?)
 3. Identify gaps — spawn targeted follow-up searches if needed
-4. Run **Visual Reference Verification** (see below)
+4. Run **Visual Reference Post-Processing** (see below)
 5. Register all artifacts in `artifact-index.md`
 
-### Visual Reference Verification (Required)
+### Visual Reference Post-Processing (Required)
 
-After the Visual Reference subagent completes, the lead agent MUST:
+The subagent produces a draft HTML with external `<img src="https://...">` URLs.
+The Cowork artifact viewer enforces a Content Security Policy (CSP) that **blocks
+all external resource loading** — external `<img>` tags and Google Fonts `<link>`
+tags render as blank. The only reliable image strategy is **base64 data URI embedding**.
+
+**Two-stage build process:**
+
+**Stage 1 (subagent):** Build the HTML structure with external image URLs as placeholders.
+Collect the best image URLs from Tavily search results (use `include_images: true`).
+
+**Stage 2 (lead agent post-processing):** After the subagent completes:
 1. Read `P2-VISREF-01.html`
-2. Search for `<img` tags — confirm at least 5 exist with real `src` URLs
-3. Search for "not available" or "no-image" — if found, the deliverable FAILS
-4. If verification fails: rebuild the HTML directly (the lead agent has full
-   capabilities) using image URLs from the Competitive Intelligence and
-   Material Research outputs
+2. Extract all `<img src="https://...">` URLs
+3. For each URL, fetch the image and convert to a base64 data URI:
+   - Use `curl -sL [url] | base64` (or Python equivalent) to fetch and encode
+   - Replace the `src` with `src="data:image/jpeg;base64,[encoded_data]"`
+   - If a fetch fails, keep the source URL as a visible `<a>` link and remove the `<img>` tag
+4. Verify the final HTML contains at least 5 `data:image` URIs
+5. Search for "not available" or "no-image" — if found, the deliverable FAILS
+6. If verification fails: rebuild using image URLs from Competitive Intelligence
+   and Material Research outputs
+7. Write the final post-processed file back to `P2-VISREF-01.html`
+
+**Size guidance:** Base64 encoding adds ~33% overhead. Target images at 600-800px
+wide (resize if needed with `sips` or ImageMagick) to keep the HTML file under 10MB.
 
 ---
 
@@ -125,28 +144,36 @@ If you research patents or design registrations:
 
 ### Image Embedding Strategy
 
-Visual reference HTML artifacts (`P2-VISREF-01.html`) must use **external URL
-`<img>` tags**, not downloaded local files. This ensures images work regardless
-of whether the execution environment allows outbound HTTP from the agent.
+The Cowork artifact viewer enforces a **Content Security Policy (CSP)** that blocks
+all external resource loading. External `<img src="https://...">` tags and Google
+Fonts `<link>` tags are silently blocked and render as blank. The only fully reliable
+image strategy is **base64 data URI embedding**.
 
-**How it works:**
-1. Use Tavily search with `include_images: true` to find product/reference images
-2. Verify URLs end in image extensions (.jpg, .png, .webp) or come from known
-   CDNs (e.g., manufacturer websites, press image servers)
-3. Embed as: `<img src="https://..." alt="[descriptive alt text]"
-   onerror="this.style.display='none'">`
-4. Include the source URL as a visible `<a>` link below each image so the user
-   can visit the source even if the image fails to load
+**Final delivery format:**
+```html
+<img src="data:image/jpeg;base64,/9j/4AAQ..." alt="[descriptive alt text]">
+```
 
-**Do NOT:**
-- Attempt to download images via curl/wget (may be blocked in sandboxed environments)
-- Use base64 encoding (bloats the HTML file)
-- Leave placeholder "Image not available" divs without source URLs
+The image data lives inside the HTML file itself — no network request needed.
 
-**Image URL quality checks:**
+**How the two-stage build works:**
+
+1. **Subagent stage:** Use Tavily search with `include_images: true` to find images.
+   Build the HTML with external `<img src="https://...">` tags as placeholders.
+2. **Lead agent post-processing:** Fetch each image URL, base64-encode it, and
+   replace the `src` attribute with a `data:image/...;base64,...` URI. See the
+   Visual Reference Post-Processing section for the full procedure.
+
+**Image URL quality checks (for the subagent stage):**
 - Prefer manufacturer/official press images (higher resolution, less likely to break)
 - Avoid thumbnail URLs (< 200px) — look for full-size variants
 - Avoid URLs with session tokens or temporary parameters (will expire)
+- Verify URLs end in image extensions (.jpg, .png, .webp) or come from known CDNs
+
+**Size management:**
+- Target images at 600-800px wide (resize during post-processing if needed)
+- Base64 adds ~33% size overhead — keep the final HTML under 10MB
+- Prefer JPEG over PNG for photographic content (smaller encoded size)
 
 ### Image naming convention (for locally downloaded images, when curl IS available)
 ```
@@ -177,15 +204,17 @@ The `P2-VISREF-01.html` file must be a self-contained, single-file HTML page wit
 
 ### Per-Card Requirements
 Each product/reference card must include:
-- `<img>` tag with external URL and descriptive `alt` text
-- `onerror` fallback that hides the broken image gracefully
-- Source URL as a visible link below the image
+- `<img>` tag with base64 data URI (after lead agent post-processing) and descriptive `alt` text
+- Source URL as a visible `<a>` link below the image for reference
 - Product name and company
 - Key specs (dimensions, materials, form factor)
 - "Design Lessons for [Product]" section
 
 ### Styling Requirements
-- Self-contained (CSS in `<style>` block, no external stylesheets except Google Fonts)
+- **Fully self-contained** — CSS in `<style>` block, NO external stylesheets, NO Google Fonts `<link>` tags
+- **System font stacks only** — the Cowork CSP blocks external font loading. Use:
+  - Sans-serif: `font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;`
+  - Monospace: `font-family: "SF Mono", SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;`
 - Responsive grid layout
 - Professional, clean typography
 - Color-coded category tags for quick scanning
