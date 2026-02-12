@@ -65,11 +65,20 @@ You are the lead designer. Delegate research to these structured workstreams, wh
 
 ## Research Orchestration
 
-When tools are available, execute research in this order:
-1. **Broad discovery** — search for competitors, materials, standards
-2. **Deep extraction** — pull specs, material data, standard details from discovered pages
-3. **Image collection** — download and register reference images
-4. **Synthesis** — compile findings into the required artifacts
+**Delegation strategy:** Spawn each workstream as a parallel subagent via the Task tool.
+
+Each subagent prompt should include:
+1. The workstream section below (mission, tasks, output artifact name)
+2. The product brief from Phase 1
+3. Capability check results (which tools are available)
+4. Output directory: `./artifacts/`
+5. Image naming convention from the Reference Image Management section
+
+**After all subagents complete:**
+1. Read each output artifact
+2. Cross-reference findings (e.g., do material choices align with standards?)
+3. Identify gaps — spawn targeted follow-up searches if needed
+4. Register all artifacts in `artifact-index.md`
 
 ---
 

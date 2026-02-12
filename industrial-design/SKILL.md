@@ -90,8 +90,14 @@ Hard gates require explicit user approval before proceeding.
 - Run the capability checklist (`references/capability-check.md`) and state your active mode
 
 ### Phase 2: Research & Competitive Landscape 🔓
-- Execute research workstreams — read `references/research-workstreams.md` for full details
-- Required artifacts: `P2-COMP-01`, `P2-MATINNO-01`, `P2-STANDARDS-01`, `P2-VISREF-01`, plus `P2-IMG-*`
+- Read `references/research-workstreams.md` for workstream details
+- **Spawn 4 parallel research subagents** using the Task tool (subagent_type: "researcher"):
+  1. **Competitive Intelligence** — prompt includes workstream instructions + brief context → outputs `P2-COMP-01.md`
+  2. **Material & Manufacturing** — prompt includes workstream instructions + brief context → outputs `P2-MATINNO-01.md`
+  3. **Standards & Compliance** — prompt includes workstream instructions + brief context → outputs `P2-STANDARDS-01.md`
+  4. **Visual References** — prompt includes workstream instructions + brief context → outputs `P2-VISREF-01.html`
+- Each subagent receives: the workstream section from research-workstreams.md, the product brief, capability check results, and output path
+- After all 4 complete, **synthesize** findings: review outputs, cross-reference, identify gaps
 - Present competitive landscape board before moving on
 
 ### Phase 3: Ideation & Concept Exploration 🔒
