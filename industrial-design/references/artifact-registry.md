@@ -51,13 +51,16 @@
 
 To keep the design consistent across phases (like a codebase), maintain these machine-readable files:
 
-### 1. `./artifacts/design-parameters.yaml` (Required)
+### 1. `./CLAUDE.md` (Required)
+The project's persistent context file. Created from `references/claude-md-template.md` during Phase 1 scaffolding. Updated at every phase gate. This is the agent's primary orientation tool when resuming a project in a new session.
+
+### 2. `./artifacts/design-parameters.yaml` (Required)
 Contains: overall dimensions, part thicknesses, radii/fillets, draft angles, clearances, datum references, mass targets.
 
-### 2. `./artifacts/materials-and-finishes.yaml` (Required)
+### 3. `./artifacts/materials-and-finishes.yaml` (Required)
 Contains: allowed materials, finish specs, color codes, texture/grip specs, regulatory constraints, supplier notes if available.
 
-### 3. `./artifacts/decision-log.md` (Required)
+### 4. `./artifacts/decision-log.md` (Required)
 Contains: dated entries recording what changed, why, what artifact informed the decision, and trade-offs considered.
 
 ### Rules

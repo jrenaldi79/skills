@@ -88,6 +88,15 @@ Hard gates require explicit user approval before proceeding.
 - If the brief is incomplete, ask the user to fill in missing fields
 - Ask at least two clarifying questions
 - Run the capability checklist (`references/capability-check.md`) and state your active mode
+- **Project Scaffolding** — after the capability check passes, create the project directory structure:
+  1. Create the project root directory (named after the product, kebab-case)
+  2. Create `./artifacts/` and `./artifacts/images/`
+  3. Create `./CLAUDE.md` from `references/claude-md-template.md` — fill in all bracketed fields
+  4. Create empty `./artifacts/artifact-index.md`
+  5. Create empty `./artifacts/decision-log.md`
+  6. Create empty `./artifacts/design-parameters.yaml`
+  7. Create empty `./artifacts/materials-and-finishes.yaml`
+- The agent MUST update `CLAUDE.md` at the end of every phase transition and after creating any new artifact
 
 ### Phase 2: Research & Competitive Landscape 🔓
 - Read `references/research-workstreams.md` for workstream details
@@ -99,6 +108,7 @@ Hard gates require explicit user approval before proceeding.
 - Each subagent receives: the workstream section from research-workstreams.md, the product brief, capability check results, and output path
 - After all 4 complete, **synthesize** findings: review outputs, cross-reference, identify gaps
 - Present competitive landscape board before moving on
+- **Before presenting gate output:** Update `./CLAUDE.md` — current phase, new artifacts in Artifact Map, key decisions, What's Next
 
 ### Phase 3: Ideation & Concept Exploration 🔒
 - Propose 2–3 concepts, each with:
@@ -107,6 +117,7 @@ Hard gates require explicit user approval before proceeding.
   - L1 concept sketch (verified against DTS)
   - Which pain point / market gap it addresses
 - Required: `P3-SKETCH-01..0N`
+- **Before presenting gate output:** Update `./CLAUDE.md` — current phase, new artifacts in Artifact Map, key decisions, What's Next
 - **STOP** — List sketch files, ask user which concept to proceed with. **Wait.**
 
 ### Phase 4: Refinement & Design Direction 🔒
@@ -115,16 +126,19 @@ Hard gates require explicit user approval before proceeding.
 - **4b** Inspiration renders — L2 fidelity 🔒. See `references/rendering-pipeline.md`
   - **Optional:** If no image-gen LLM is available, the canvas-design skill can produce high-fidelity visual artifacts that convey material feel, color story, and emotional tone as an alternative to L2 prompt packages.
 - **4c** Dimensioned sketch + update `design-parameters.yaml` and `materials-and-finishes.yaml` 🔓
+- **Before presenting gate output:** Update `./CLAUDE.md` — current phase, chosen concept in Active Design Direction, new artifacts, key decisions, What's Next
 - **STOP** — Ask for approval on refined design direction.
 
 ### Phase 5: Failure Mode Analysis (FMEA-lite) 🔓
 - Create `P5-FMEA-01`, incorporate mitigations into parameters and spec
+- **Before proceeding:** Update `./CLAUDE.md` — current phase, new artifacts, FMEA-driven decisions, What's Next
 
 ### Phase 6: Final Specification 🔒
 - `P6-TECHDRAW-01` — L3 drawings with tolerances and GD&T where appropriate
 - `P6-HERORENDER-01` — if CAD tools available; otherwise best visuals with clear caveats
 - `P6-SPECSHEET-01` — complete written spec (see `references/spec-template.md` for format)
 - Finalize: `artifact-index.md`, `design-parameters.yaml`, `materials-and-finishes.yaml`, `decision-log.md`
+- **Before presenting gate output:** Update `./CLAUDE.md` — mark Phase 6 complete, finalize Artifact Map and Key Decisions, clear What's Next
 - **STOP** — Request final sign-off.
 
 ---
@@ -173,6 +187,7 @@ Read `references/costing-policy.md` for the full policy.
 | File | When to read |
 |------|-------------|
 | `references/capability-check.md` | Start of every project (Phase 1) |
+| `references/claude-md-template.md` | Phase 1 (project scaffolding — copy into project root) |
 | `references/research-workstreams.md` | Phase 2 (research delegation) |
 | `references/rendering-pipeline.md` | Phases 3–6 (any visual output) |
 | `references/artifact-registry.md` | When creating or tracking any deliverable |

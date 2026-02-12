@@ -71,14 +71,44 @@ Each subagent prompt should include:
 1. The workstream section below (mission, tasks, output artifact name)
 2. The product brief from Phase 1
 3. Capability check results (which tools are available)
-4. Output directory: `./artifacts/`
-5. Image naming convention from the Reference Image Management section
+4. The **absolute** output file path (not relative — subagents may not share the lead agent's working directory)
+5. Image embedding instructions from the Reference Image Management section
+
+### Subagent Capability Constraints
+
+Subagents spawned via the Task tool may have DIFFERENT capabilities than the
+lead agent. In particular:
+
+- **Bash/curl access:** Subagents may not be able to execute shell commands
+  or make outbound HTTP requests. Do NOT instruct subagents to download files
+  via curl.
+- **Filesystem writes:** Subagents CAN typically write files to the output
+  directory. Provide the ABSOLUTE path, not a relative one.
+- **Web research tools:** Subagents DO have access to Tavily and similar
+  research tools. Instruct them to use `include_images: true` in Tavily
+  search calls to get image URLs.
+
+When delegating to subagents, the lead agent should:
+1. Pass the absolute output file path (not relative)
+2. Instruct the subagent to embed image URLs directly, not download them
+3. Verify the subagent's output after it completes (see Verification below)
 
 **After all subagents complete:**
 1. Read each output artifact
 2. Cross-reference findings (e.g., do material choices align with standards?)
 3. Identify gaps — spawn targeted follow-up searches if needed
-4. Register all artifacts in `artifact-index.md`
+4. Run **Visual Reference Verification** (see below)
+5. Register all artifacts in `artifact-index.md`
+
+### Visual Reference Verification (Required)
+
+After the Visual Reference subagent completes, the lead agent MUST:
+1. Read `P2-VISREF-01.html`
+2. Search for `<img` tags — confirm at least 5 exist with real `src` URLs
+3. Search for "not available" or "no-image" — if found, the deliverable FAILS
+4. If verification fails: rebuild the HTML directly (the lead agent has full
+   capabilities) using image URLs from the Competitive Intelligence and
+   Material Research outputs
 
 ---
 
@@ -93,19 +123,32 @@ If you research patents or design registrations:
 
 ## Reference Image Management
 
-Throughout research, save valuable images (competitor photos, material samples, environment shots, inspiration) as artifacts.
+### Image Embedding Strategy
 
-**How to save reference images:**
-1. Identify the image URL from research results
-2. Download using bash tools: `curl -L -o ./artifacts/images/P2-IMG-COMP-01.jpg "https://..."`
-3. Register as an artifact with a descriptive ID and metadata in `artifact-index.md`
-4. Reference by artifact ID in all subsequent work
+Visual reference HTML artifacts (`P2-VISREF-01.html`) must use **external URL
+`<img>` tags**, not downloaded local files. This ensures images work regardless
+of whether the execution environment allows outbound HTTP from the agent.
 
-**Inspection rules:**
-- If vision inspection is available: ingest/analyze the image and extract useful details (materials, joins, part lines, ergonomics cues)
-- If vision inspection is NOT available: verify file properties (type, resolution, file size) and ask the user to confirm key visual details needed for DTS checks
+**How it works:**
+1. Use Tavily search with `include_images: true` to find product/reference images
+2. Verify URLs end in image extensions (.jpg, .png, .webp) or come from known
+   CDNs (e.g., manufacturer websites, press image servers)
+3. Embed as: `<img src="https://..." alt="[descriptive alt text]"
+   onerror="this.style.display='none'">`
+4. Include the source URL as a visible `<a>` link below each image so the user
+   can visit the source even if the image fails to load
 
-**Image naming convention:**
+**Do NOT:**
+- Attempt to download images via curl/wget (may be blocked in sandboxed environments)
+- Use base64 encoding (bloats the HTML file)
+- Leave placeholder "Image not available" divs without source URLs
+
+**Image URL quality checks:**
+- Prefer manufacturer/official press images (higher resolution, less likely to break)
+- Avoid thumbnail URLs (< 200px) — look for full-size variants
+- Avoid URLs with session tokens or temporary parameters (will expire)
+
+### Image naming convention (for locally downloaded images, when curl IS available)
 ```
 P[phase]-IMG-[category]-[sequence].[ext]
 
@@ -117,3 +160,32 @@ Categories:
   MOOD    = Mood board element
   RENDER  = Generated render output
 ```
+
+---
+
+## Visual Reference Board HTML Specification
+
+The `P2-VISREF-01.html` file must be a self-contained, single-file HTML page with:
+
+### Required Sections
+1. **Direct Competitors** — Product photos + specs + design lessons
+2. **Analogous Devices** — Best-in-class benchmarks from adjacent categories
+3. **Academic/Emerging** — Research-stage references (if applicable)
+4. **Material & Finish Direction** — Material palette with visual swatches
+5. **Usage Environment** — Context for where/how the product is used
+6. **Design Direction Synthesis** — Summary of aesthetic direction
+
+### Per-Card Requirements
+Each product/reference card must include:
+- `<img>` tag with external URL and descriptive `alt` text
+- `onerror` fallback that hides the broken image gracefully
+- Source URL as a visible link below the image
+- Product name and company
+- Key specs (dimensions, materials, form factor)
+- "Design Lessons for [Product]" section
+
+### Styling Requirements
+- Self-contained (CSS in `<style>` block, no external stylesheets except Google Fonts)
+- Responsive grid layout
+- Professional, clean typography
+- Color-coded category tags for quick scanning
