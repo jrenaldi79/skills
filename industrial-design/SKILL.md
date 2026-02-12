@@ -101,6 +101,7 @@ Hard gates require explicit user approval before proceeding.
   5. Create empty `./artifacts/decision-log.md`
   6. Create empty `./artifacts/design-parameters.yaml`
   7. Create empty `./artifacts/materials-and-finishes.yaml`
+  8. Run `python scripts/generate-dashboard.py .` to generate the initial `index.html` dashboard
 - The agent MUST update `CLAUDE.md` at the end of every phase transition and after creating any new artifact
 
 ### Phase 2: Research & Competitive Landscape 🔓
@@ -116,6 +117,7 @@ Hard gates require explicit user approval before proceeding.
 - After all 4 complete: read outputs, cross-reference, identify gaps, run visual reference post-processing
 - Present competitive landscape board before moving on
 - **Before presenting gate output:** Update `./CLAUDE.md` — current phase, new artifacts in Artifact Map, key decisions, What's Next
+- **Regenerate dashboard:** Run `python scripts/generate-dashboard.py .` to update `index.html`
 
 ### Phase 3: Ideation & Concept Exploration 🔒
 - Propose 2–3 concepts, each with:
@@ -125,6 +127,7 @@ Hard gates require explicit user approval before proceeding.
   - Which pain point / market gap it addresses
 - Required: `P3-SKETCH-01..0N`
 - **Before presenting gate output:** Update `./CLAUDE.md` — current phase, new artifacts in Artifact Map, key decisions, What's Next
+- **Regenerate dashboard:** Run `python scripts/generate-dashboard.py .` to update `index.html`
 - **STOP** — List sketch files, ask user which concept to proceed with. **Wait.**
 
 ### Phase 4: Refinement & Design Direction 🔒
@@ -136,11 +139,13 @@ Hard gates require explicit user approval before proceeding.
   - **Optional:** If no image-gen LLM is available, the canvas-design skill can produce high-fidelity visual artifacts that convey material feel, color story, and emotional tone as an alternative to L2 prompt packages.
 - **4c** Dimensioned sketch + update `design-parameters.yaml` and `materials-and-finishes.yaml` 🔓
 - **Before presenting gate output:** Update `./CLAUDE.md` — current phase, chosen concept in Active Design Direction, new artifacts, key decisions, What's Next
+- **Regenerate dashboard:** Run `python scripts/generate-dashboard.py .` to update `index.html`
 - **STOP** — Ask for approval on refined design direction.
 
 ### Phase 5: Failure Mode Analysis (FMEA-lite) 🔓
 - Create `P5-FMEA-01`, incorporate mitigations into parameters and spec
 - **Before proceeding:** Update `./CLAUDE.md` — current phase, new artifacts, FMEA-driven decisions, What's Next
+- **Regenerate dashboard:** Run `python scripts/generate-dashboard.py .` to update `index.html`
 
 ### Phase 6: Final Specification 🔒
 - `P6-TECHDRAW-01` — L3 drawings with tolerances and GD&T where appropriate
@@ -148,6 +153,7 @@ Hard gates require explicit user approval before proceeding.
 - `P6-SPECSHEET-01` — complete written spec (see `references/spec-template.md` for format)
 - Finalize: `artifact-index.md`, `design-parameters.yaml`, `materials-and-finishes.yaml`, `decision-log.md`
 - **Before presenting gate output:** Update `./CLAUDE.md` — mark Phase 6 complete, finalize Artifact Map and Key Decisions, clear What's Next
+- **Regenerate dashboard:** Run `python scripts/generate-dashboard.py .` to update `index.html`
 - **STOP** — Request final sign-off.
 
 ---
@@ -205,3 +211,4 @@ Read `references/costing-policy.md` for the full policy.
 | `references/engineering-standards.md` | Phases 4–6 (dimensioning, tolerancing, specs) |
 | `references/costing-policy.md` | Phase 6 or any cost/sourcing discussion |
 | `references/spec-template.md` | Phase 1 (brief template) and Phase 6 (final spec format) |
+| `scripts/generate-dashboard.py` | Every phase gate (regenerate project dashboard) |

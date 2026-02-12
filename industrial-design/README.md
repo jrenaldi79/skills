@@ -28,6 +28,7 @@ industrial-design/
 ├── scripts/
 │   ├── init-artifact.sh            # Scaffold React + Tailwind + shadcn/ui artifact project
 │   ├── bundle-artifact.sh          # Bundle artifact into single-file HTML
+│   ├── generate-dashboard.py       # Generate index.html project dashboard
 │   └── shadcn-components.tar.gz    # Pre-packaged shadcn/ui components
 └── assets/
 ```
@@ -44,6 +45,13 @@ The skill guides Claude through 6 phases with explicit gates:
 6. **Final Spec** (🔒) — Technical drawings, hero render, full spec sheet. Hard stop for sign-off.
 
 `CLAUDE.md` is updated at every phase gate so new sessions can resume mid-project. Reference files load only when the workflow reaches their phase, keeping context lean.
+
+### Project Dashboard
+
+Every phase gate regenerates `index.html` — a visual dashboard showing phase progress,
+all artifacts with status badges, key decisions, and design direction. Generated
+deterministically by `scripts/generate-dashboard.py` from `artifact-index.md` and
+`CLAUDE.md` (no LLM involvement). The markdown files remain the source of truth.
 
 ### Design System
 
