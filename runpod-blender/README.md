@@ -1,115 +1,203 @@
-# Blender Product Render Skill
+# runpod-blender
 
-A Claude Code skill for photorealistic product rendering in Blender, locally or on cloud GPUs (RunPod).
+A **Claude Code plugin** for photorealistic product rendering in Blender — locally or on cloud GPUs (RunPod).
 
-Describe a product, and Claude Code models it, textures it, lights it, and renders it through Blender's Python API. No Blender experience required.
+> **This is a plugin, not a skill.** It bundles an MCP server (`blender-mcp`), a rendering skill, and pod-awareness hooks into a single installable package. Do not install it as a standalone skill — use the plugin install method below.
 
-![Smart speaker render](https://raw.githubusercontent.com/jrenaldi79/skills/main/runpod-blender/assets/smart_speaker_render.jpg)
+**Cost:** Cloud rendering runs ~$0.28-0.34/hr on RunPod. The plugin includes hooks that remind you when a pod is still running so you don't get surprise bills.
 
-## What It Does
+---
 
-- Models 3D geometry from a text description
-- Applies PBR materials (glass, metal, plastic, fabric, leather, ceramic)
-- Sets up studio HDRI lighting and camera composition
-- Renders iterative checkpoints, evaluates each against a 6-point quality checklist, and fixes issues automatically
-- Produces final HD/4K renders
-- Supports local rendering or cloud GPUs on RunPod (~$0.28/hr)
+## What's Included
 
-## File Structure
+| Component | What It Does |
+|-----------|-------------|
+| **MCP server** (`blender-mcp`) | Auto-registered on install — no separate MCP config needed |
+| **Rendering skill** | 8-step product photography workflow (geometry, materials, lighting, camera, render, iterate) |
+| **Pod-awareness hooks** | Warns at session start/end/idle if your RunPod pod is still running |
+| **RunPod scripts** | Pod lifecycle management (start, stop, status, create) |
 
-```
-runpod-blender/
-  SKILL.md                              # Main orchestrator
-  .env.example                          # Environment variable template
-  runpod-blender.skill.zip              # Packaged skill (all files)
-  scripts/
-    runpod_manager.py                   # Pod lifecycle (start, stop, status, create)
-    pod_setup.sh                        # First-time pod setup
-  references/
-    onboarding-setup.md                 # First-time setup (Blender, MCP, RunPod account)
-    rendering-standards.md              # Engine config, lighting, camera, render settings
-    materials-and-products.md           # PBR material recipes by product type
-    debugging.md                        # Troubleshooting render failures
-    runpod-infrastructure.md            # Pod lifecycle, SSH, VNC, file transfer
-```
+---
 
-## Quick Start
+## Install the Plugin
 
-### Option 1: Install from zip
-
-1. Download `runpod-blender.skill.zip`
-2. Unzip into your Claude Code skills directory:
-   ```bash
-   mkdir -p ~/.claude/skills/runpod-blender
-   unzip runpod-blender.skill.zip -d ~/.claude/skills/runpod-blender
-   ```
-
-### Option 2: Symlink from this repo
+### 1. Clone the skills repo
 
 ```bash
-git clone https://github.com/jrenaldi79/skills.git ~/skills-repo
-ln -s ~/skills-repo/runpod-blender ~/.claude/skills/runpod-blender
+git clone https://github.com/jrenaldi79/skills.git
+cd skills
 ```
 
-### Configure MCP
+### 2. Install as a Claude Code plugin
 
-Create `.mcp.json` in your project directory:
-
-```json
-{
-    "mcpServers": {
-        "blender": {
-            "command": "uvx",
-            "args": ["blender-mcp"]
-        }
-    }
-}
+```bash
+claude plugin install ./runpod-blender
 ```
 
-### For Cloud Rendering (Optional)
+This registers the `blender-mcp` MCP server and makes the `runpod-blender` skill available automatically. No separate MCP configuration step is needed.
 
-1. Create a [RunPod](https://runpod.io) account and generate an API key
-2. Install the RunPod CLI: `pip install runpodctl`
-3. Generate an SSH key: `runpodctl ssh add-key`
-4. Copy `.env.example` to `.env` in your project directory and fill in your values:
-   ```
-   RUNPOD_API_KEY=rpa_...
-   RUNPOD_POD_ID=           # filled after pod creation
-   VNC_PASSWORD=blender123
-   ```
-5. Never commit `.env` to git
+> **For development:** Use `claude --plugin-dir ./runpod-blender` to load the plugin from the local directory without installing.
 
-See `references/onboarding-setup.md` for the full walkthrough.
+### 3. Install uv (required for blender-mcp)
+
+```bash
+# macOS
+brew install uv
+
+# Linux / WSL
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+### 4. Create your `.env` file
+
+Copy the template into your project working directory and add your RunPod API key:
+
+```bash
+cp runpod-blender/.env.example .env
+```
+
+Edit `.env` and set `RUNPOD_API_KEY` to your key (get one from RunPod > Settings > API Keys).
+
+**Important:** Never commit `.env` to git — it contains your API key.
+
+### 5. Install the RunPod CLI and SSH key
+
+**macOS:**
+```bash
+mkdir -p ~/.local/bin
+curl -Lo /tmp/runpodctl.tar.gz -L \
+  https://github.com/runpod/runpodctl/releases/latest/download/runpodctl-darwin-all.tar.gz
+tar xzf /tmp/runpodctl.tar.gz -C /tmp/
+mv /tmp/runpodctl ~/.local/bin/runpodctl
+chmod +x ~/.local/bin/runpodctl
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+**Linux:**
+```bash
+mkdir -p ~/.local/bin
+curl -Lo /tmp/runpodctl.tar.gz -L \
+  https://github.com/runpod/runpodctl/releases/latest/download/runpodctl-linux-amd64.tar.gz
+tar xzf /tmp/runpodctl.tar.gz -C /tmp/
+mv /tmp/runpodctl ~/.local/bin/runpodctl
+chmod +x ~/.local/bin/runpodctl
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+Then configure your API key and generate an SSH key:
+```bash
+runpodctl config --apiKey YOUR_API_KEY
+runpodctl ssh add-key
+```
+
+### 6. First-time pod setup
+
+Tell Claude: **"Set up a new RunPod pod for Blender"**
+
+It will create a GPU pod, SSH in, install Blender 4.2 + dependencies to the persistent volume, and save your pod ID to `.env`. This takes ~5 minutes and only needs to happen once.
+
+---
+
+## Daily Usage
+
+```
+You:    "Start my blender session"
+Claude: [starts pod, runs startup script, sets up SSH tunnel]
+        "VNC is ready — connect to vnc://localhost:5900"
+
+You:    [connect VNC to watch in real-time]
+You:    "Create a product scene with a glass bottle and studio lighting"
+Claude: [controls Blender via MCP, you watch in VNC]
+
+You:    "Stop my blender session"
+Claude: [stops pod, kills tunnel]
+        "Pod stopped. No more charges."
+```
+
+### VNC Connection
+
+- **macOS**: Finder > Cmd+K > `vnc://localhost:5900`
+- **Linux**: `vncviewer localhost:5900`
+- **Windows**: RealVNC Viewer > `localhost:5900`
+
+### MCP Connection
+
+The BlenderMCP addon auto-starts when Blender launches — no manual activation needed. Claude controls Blender through the MCP bridge over the SSH tunnel (port 9876).
+
+---
 
 ## How It Works
 
-The skill teaches Claude Code a structured rendering workflow:
+```
+Your Laptop                          RunPod GPU Pod
+┌──────────────────┐                ┌──────────────────────┐
+│  Claude Code     │───port 9876──▶│  Blender + MCP Addon │
+│  blender-mcp     │   SSH Tunnel   │  (auto-started)      │
+│                  │                │                      │
+│  VNC Viewer      │───port 5900──▶│  Xvfb + x11vnc       │
+│  (Screen Sharing)│                │  (virtual display)   │
+└──────────────────┘                │  GPU (RTX 4080/4090) │
+                                    └──────────────────────┘
+```
 
-1. **Scene Init** — Clear defaults, set Cycles engine
-2. **Geometry** — Model or import at real-world scale, apply bevel modifiers
-3. **Materials** — Principled BSDF with micro-roughness imperfections
-4. **Lighting** — Studio HDRI (Poly Haven) or 3-point light rig
-5. **Camera** — 50-85mm focal length, depth of field, off-axis composition
-6. **Iterate** — Render checkpoint, evaluate against 6 criteria, fix, repeat
-7. **Deliver** — Final HD/4K render
-8. **Cleanup** — Save .blend, stop pod (cloud only)
+- **Xvfb**: Fake monitor so Blender can run on a headless server
+- **x11vnc**: Streams the fake monitor to your VNC viewer
+- **blender-mcp**: Bridge between Claude and Blender's Python API
+- **SSH tunnel**: Securely forwards both ports to your laptop
 
-The 6-point evaluation gate checks framing, edge highlights, shadow grounding, exposure balance, material read, and composition before anything gets called "done."
+---
 
-## Requirements
+## Plugin Structure
 
-- Python 3.10+
-- [uv](https://github.com/astral-sh/uv) package manager
-- Blender 3.0+ (local) or a RunPod account (cloud)
-- Claude Code with MCP support
+```
+runpod-blender/                      # This directory IS the plugin
+├── .claude-plugin/
+│   └── plugin.json                  # Plugin manifest
+├── .mcp.json                        # Auto-registers blender-mcp
+├── .env.example                     # Credential template
+├── README.md                        # This file
+├── skills/
+│   └── runpod-blender/
+│       ├── SKILL.md                 # Rendering workflow orchestrator
+│       ├── scripts/                 # runpod_manager.py, pod_setup.sh
+│       └── references/              # Standards, materials, debugging guides
+├── hooks/
+│   └── hooks.json                   # Pod reminder hooks
+├── scripts/
+│   └── pod_reminder.py              # Hook: checks if pod is running
+└── evals/
+    ├── evals.json                   # Behavioral test cases
+    └── test_hooks.sh                # Hook integration tests
+```
 
-## Supported LLM Clients
+---
 
-The onboarding guide covers setup for:
-- Claude Code (`.mcp.json`)
-- Claude Desktop (`claude_desktop_config.json`)
-- ChatWise (SQLite database)
+## Troubleshooting
 
-## License
+| Problem | Solution |
+|---------|----------|
+| GPU unavailable when creating pod | Try a different GPU type. Ask Claude to list available GPUs. |
+| Pod won't start after stopping | Host may be full. Delete and recreate the pod (re-run first-time setup). |
+| SSH connection refused | Pod is still booting. Wait 30 seconds and retry. |
+| `blender: command not found` | Expected after restart. The startup script fixes this automatically. |
+| VNC won't connect | Check tunnel is running. Ask Claude to restart the session. |
+| VNC needs a password | Default is `blender123`. |
+| MCP not connecting | Should auto-start. Check tunnel is up and port 9876 is listening on the pod. |
+| Black screen in VNC | Blender may have crashed. Ask Claude to restart Blender on the pod. |
+| Render using CPU not GPU | In Blender: Edit > Preferences > System > CUDA > check your GPU. |
+| Left pod running overnight | Stop it ASAP: `runpodctl stop pod YOUR_POD_ID` |
 
-MIT
+## GPU Options
+
+| GPU | VRAM | $/hr | Notes |
+|-----|------|------|-------|
+| RTX 3090 | 24GB | $0.22 | Budget option |
+| RTX 4080 SUPER | 16GB | $0.28 | Great value |
+| RTX 4090 | 24GB | $0.34 | Best consumer GPU |
+| A40 | 48GB | $0.35 | Pro, huge VRAM |
+
+## Key Concept: Persistent Storage
+
+Only the `/runpod` volume survives pod restarts. System packages and config files are wiped each time. The startup script handles reinstalling everything automatically — you don't need to worry about this.

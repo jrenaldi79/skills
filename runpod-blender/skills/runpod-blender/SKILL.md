@@ -1,5 +1,5 @@
 ---
-name: blender-product-render
+name: runpod-blender
 description: >
   Photorealistic product rendering in Blender via MCP — locally or on cloud GPUs (RunPod).
   Triggers: "render", "3D visualization", "product shot", "Blender scene", "photorealistic",

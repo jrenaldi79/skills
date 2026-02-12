@@ -47,10 +47,11 @@ def find_env_file() -> str | None:
     """Search for .env file in standard locations."""
     candidates = [
         os.path.join(os.getcwd(), ".env"),
+        os.path.join(os.environ.get("CLAUDE_PROJECT_DIR", ""), ".env"),
         os.path.expanduser("~/blender-files/runpod/.env"),
     ]
     for path in candidates:
-        if os.path.exists(path):
+        if path and os.path.exists(path):
             return path
     return None
 

@@ -1,0 +1,151 @@
+{
+  "evals": [
+    {
+      "id": "eval-1",
+      "name": "Local render workflow",
+      "description": "Tests core skill behavior after plugin conversion — full 8-step render workflow.",
+      "prompt": "Render a photorealistic shot of a simple coffee mug on a wooden surface. Use a studio HDRI for lighting.",
+      "assertions": [
+        {
+          "id": "reads-skill",
+          "description": "Agent reads SKILL.md and follows the 8-step workflow (scene init -> geometry -> materials -> light -> camera -> test render -> final -> cleanup)",
+          "severity": "critical"
+        },
+        {
+          "id": "uses-cycles",
+          "description": "Agent uses Cycles render engine, not Eevee",
+          "severity": "critical"
+        },
+        {
+          "id": "checks-polyhaven",
+          "description": "Agent calls get_polyhaven_status before attempting HDRI download",
+          "severity": "high"
+        },
+        {
+          "id": "applies-bevel",
+          "description": "Agent applies a bevel modifier to the mug geometry",
+          "severity": "high"
+        },
+        {
+          "id": "reads-materials-ref",
+          "description": "Agent reads references/materials-and-products.md before assigning materials",
+          "severity": "high"
+        },
+        {
+          "id": "test-render-checklist",
+          "description": "Agent does NOT skip the test render evaluation checklist (framing, edge highlights, shadow grounding, exposure, material read, composition)",
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "id": "eval-2",
+      "name": "Cloud session management",
+      "description": "Tests RunPod integration path — pod lifecycle and SSH tunneling.",
+      "prompt": "I want to render on my RunPod cloud GPU. Help me start a session and set up the scene.",
+      "assertions": [
+        {
+          "id": "reads-runpod-ref",
+          "description": "Agent detects 'cloud' path and reads references/runpod-infrastructure.md",
+          "severity": "critical"
+        },
+        {
+          "id": "uses-runpod-manager",
+          "description": "Agent uses runpod_manager.py to start the pod (or instructs the user to)",
+          "severity": "critical"
+        },
+        {
+          "id": "fresh-ssh-info",
+          "description": "Agent queries fresh SSH info (does NOT reuse stale IP/port)",
+          "severity": "high"
+        },
+        {
+          "id": "ssh-tunnel-ports",
+          "description": "Agent establishes SSH tunnel for ports 9876, 5900, and 6080",
+          "severity": "high"
+        },
+        {
+          "id": "verifies-mcp",
+          "description": "Agent verifies MCP connection with get_scene_info after tunnel setup",
+          "severity": "high"
+        },
+        {
+          "id": "cost-awareness",
+          "description": "Agent mentions or plans to stop the pod when done (~$0.28/hr cost awareness)",
+          "severity": "medium"
+        }
+      ]
+    },
+    {
+      "id": "eval-3",
+      "name": "First-time onboarding",
+      "description": "Tests that onboarding references load correctly from plugin structure.",
+      "prompt": "I've never used Blender with Claude before. How do I get started?",
+      "assertions": [
+        {
+          "id": "reads-onboarding",
+          "description": "Agent reads references/onboarding-setup.md (not a 404 or missing file)",
+          "severity": "critical"
+        },
+        {
+          "id": "detects-os",
+          "description": "Agent detects the user's OS (macOS/Windows/Linux)",
+          "severity": "high"
+        },
+        {
+          "id": "detects-client",
+          "description": "Agent detects the LLM client (Claude Code in this case)",
+          "severity": "high"
+        },
+        {
+          "id": "blender-before-mcp",
+          "description": "Agent walks through Blender installation before MCP configuration",
+          "severity": "high"
+        },
+        {
+          "id": "mentions-uv",
+          "description": "Agent mentions uv package manager as a prerequisite",
+          "severity": "medium"
+        },
+        {
+          "id": "verifies-connection",
+          "description": "Agent does NOT skip the connection verification step (get_scene_info)",
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "id": "eval-4",
+      "name": "Debugging scenario",
+      "description": "Tests diagnostic reference access — black render troubleshooting.",
+      "prompt": "My render is coming out completely black. I have a scene with a metal sphere and an HDRI but the output is just black.",
+      "assertions": [
+        {
+          "id": "reads-debugging",
+          "description": "Agent reads references/debugging.md",
+          "severity": "critical"
+        },
+        {
+          "id": "viewport-first",
+          "description": "Agent suggests taking a viewport screenshot first (fastest diagnostic)",
+          "severity": "high"
+        },
+        {
+          "id": "systematic-checks",
+          "description": "Agent systematically checks: object exists in scene, lights/HDRI connected, material node connections, camera pointing at object",
+          "severity": "high"
+        },
+        {
+          "id": "no-sample-increase",
+          "description": "Agent does NOT immediately suggest increasing samples (wrong diagnosis for black render)",
+          "severity": "medium"
+        },
+        {
+          "id": "checks-world-output",
+          "description": "Agent checks that the world shader Background node is connected to the World Output node",
+          "severity": "high"
+        }
+      ]
+    }
+  ]
+}

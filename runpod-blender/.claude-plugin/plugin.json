@@ -1,0 +1,9 @@
+{
+  "name": "runpod-blender",
+  "description": "Photorealistic product rendering in Blender via MCP — locally or on cloud GPUs (RunPod)",
+  "version": "1.0.0",
+  "author": {
+    "name": "John Renaldi"
+  },
+  "repository": "https://github.com/john-renaldi/runpod-blender"
+}
