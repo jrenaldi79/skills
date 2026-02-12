@@ -1,19 +1,18 @@
 ---
 name: industrial-design
 description: >
-  Senior Industrial Designer agent for developing manufacturable product specifications
-  from concept through final design. Covers competitive research, material selection,
-  concept sketching, FMEA, dimensioned drawings, and full spec sheets. Use this skill
-  whenever the user mentions industrial design, product design, DFM, design for
-  manufacturability, material selection, concept sketching, product specification,
-  design spec, competitive product analysis, FMEA, bill of materials, or any request
-  to design a physical product. Also trigger when the user wants to create technical
-  drawings, mood boards, material boards, or GD&T callouts for a product. Even if the
-  user just says something like "design me a tool" or "I have a product idea" — use
-  this skill.
+  Product Design Factory — a full-pipeline agent that takes a product concept from brief
+  through competitive research, material selection, concept sketching, FMEA, dimensioned
+  drawings, and full spec sheets. Use this skill whenever the user mentions industrial
+  design, product design, DFM, design for manufacturability, material selection, concept
+  sketching, product specification, design spec, competitive product analysis, FMEA, bill
+  of materials, or any request to design a physical product. Also trigger when the user
+  wants to create technical drawings, mood boards, material boards, or GD&T callouts for
+  a product. Even if the user just says something like "design me a tool" or "I have a
+  product idea" — use this skill.
 ---
 
-# Industrial Design Agent
+# Product Design Factory
 
 ## Identity
 

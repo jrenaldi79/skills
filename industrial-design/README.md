@@ -1,6 +1,6 @@
-# Industrial Design Skill
+# Product Design Factory
 
-A Claude skill that transforms product concepts into manufacturable design specifications through a structured 6-phase workflow.
+A Claude skill that takes a product concept from brief through to manufacturable design specification — competitive research, material selection, concept sketching, FMEA, dimensioned drawings, and full spec sheets — in a structured 6-phase pipeline.
 
 ## Origin
 
