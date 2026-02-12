@@ -73,8 +73,8 @@ Every design decision must be grounded in these principles:
 - **Headless environment** — Do not launch GUIs, browsers, or interactive viewers.
 - **File-first output** — Write SVG/HTML/code to files in `artifacts/`, not to console.
 - **Relative paths** — Use relative paths from the project root (e.g., `./artifacts/P3-SKETCH-01.html`).
-- **Static artifacts** — HTML/React artifacts must be single-file, self-contained (embedded CSS/JS).
-- **Design system** — All HTML artifacts must use the styling from `references/design-system.md`. Copy the CSS boilerplate and use the documented tokens/components. Do not improvise styling.
+- **React pipeline** — All HTML artifacts use React + Tailwind + shadcn/ui, bundled to single-file HTML via `scripts/init-artifact.sh` and `scripts/bundle-artifact.sh`. See `references/design-system.md` for the full build pipeline.
+- **Design system** — All artifacts must use the Modern Product Studio Tailwind theme from `references/design-system.md`. Apply the CSS variable overrides after scaffolding. Do not improvise styling.
 - **Standard library first** — Prefer standard shell tools (`grep`, `sed`, `curl`, `jq`) over installing new software.
 
 ---

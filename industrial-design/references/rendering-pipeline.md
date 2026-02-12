@@ -10,10 +10,10 @@ You may skip L2 only if it does not serve the user's stated goal, and only after
 ## Level 1: Low Fidelity — Structural Sketches (SVG / HTML Files)
 
 **Purpose:** Rapidly explore form, proportion, layout, and functional arrangement.
-**Tools:** SVG diagrams, React/HTML artifacts, annotated wireframes.
-**Style:** Clean line drawings. Dark strokes on light background. Annotation callouts for dimensions, features, materials. Orthographic views (front, top, side) where needed.
+**Tools:** React + Tailwind + shadcn/ui (via `scripts/init-artifact.sh` → `scripts/bundle-artifact.sh`). Inline SVG for technical drawings inside React components.
+**Style:** Clean line drawings using the Modern Product Studio SVG conventions (see `design-system.md`). Dark strokes on light background. Annotation callouts for dimensions, features, materials. Orthographic views (front, top, side) where needed.
 **When:** Phase 3 (Ideation) and early Phase 4 (Refinement).
-**Action:** Write code to `./artifacts/P3-SKETCH-XX.html`.
+**Action:** Scaffold with `init-artifact.sh`, develop in React with inline SVG, bundle to `./artifacts/P3-SKETCH-XX.html`.
 **Console output:** "Created sketch at `artifacts/P3-SKETCH-01.html`. Open this file in your browser to view."
 
 ---

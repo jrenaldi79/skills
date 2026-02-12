@@ -1,6 +1,82 @@
 # Design System — Modern Product Studio
 
-Every HTML artifact produced by this skill MUST use this design system. Copy the CSS and HTML boilerplate below into each artifact's `<style>` and `<body>` blocks. Do not improvise styling — use these tokens and components verbatim.
+Every HTML artifact produced by this skill MUST use this design system. Do not improvise styling — use the documented tokens and components.
+
+## Build Pipeline
+
+All artifacts use the **React + Tailwind + shadcn/ui** pipeline:
+
+```
+1. bash scripts/init-artifact.sh <artifact-name>    # scaffold React project
+2. Edit src/App.tsx and add components               # develop the artifact
+3. bash scripts/bundle-artifact.sh                   # bundle to single HTML
+4. Copy bundle.html to artifacts/<ARTIFACT-ID>.html  # deliver
+```
+
+**Stack:** React 18 + TypeScript + Vite + Tailwind CSS + shadcn/ui + Parcel (bundling)
+
+**Anti-slop rule:** Avoid excessive centered layouts, purple gradients, uniform rounded corners, and Inter font. Follow the warm earth-tone palette below.
+
+### Tailwind Theme Override
+
+After running `init-artifact.sh`, replace the CSS variables in `src/index.css` with our Modern Product Studio theme:
+
+```css
+@layer base {
+  :root {
+    /* Modern Product Studio — warm earth tones */
+    --background: 40 14% 97%;       /* #faf9f7 — sheet */
+    --foreground: 18 18% 14%;       /* #2c2420 — primary text */
+    --card: 0 0% 100%;              /* #ffffff — cards */
+    --card-foreground: 18 18% 14%;  /* #2c2420 */
+    --popover: 0 0% 100%;
+    --popover-foreground: 18 18% 14%;
+    --primary: 18 18% 14%;          /* #2c2420 — primary actions */
+    --primary-foreground: 40 14% 97%;
+    --secondary: 30 18% 93%;        /* #f0ece6 — subtle fills */
+    --secondary-foreground: 18 18% 29%;  /* #5a4a3a — body text */
+    --muted: 30 18% 93%;            /* #f0ece6 */
+    --muted-foreground: 24 10% 47%; /* #8a7a6a — muted text */
+    --accent: 27 53% 50%;           /* #c17840 — annotation accent */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 8 59% 46%;       /* #b84830 — fail/error */
+    --destructive-foreground: 0 0% 98%;
+    --border: 28 14% 80%;           /* #d5cec4 — card borders */
+    --input: 30 16% 88%;            /* #e8e2da — input borders */
+    --ring: 27 53% 50%;             /* #c17840 — focus ring */
+    --radius: 0.5rem;
+
+    /* Custom tokens (use via Tailwind arbitrary values) */
+    --status-pass: 140 30% 42%;     /* #4a8c5c */
+    --status-pass-bg: 140 30% 95%;  /* #eef5f0 */
+    --status-fail: 8 59% 46%;       /* #b84830 */
+    --status-fail-bg: 8 60% 97%;    /* #fdf0ed */
+    --annotation: 27 53% 50%;       /* #c17840 */
+    --annotation-border: 30 65% 64%;/* #e8a060 */
+  }
+}
+```
+
+### shadcn/ui Component Usage
+
+Import components from `@/components/ui/`. Commonly used:
+
+| Component | Use For |
+|-----------|---------|
+| `Card, CardHeader, CardContent` | Product cards, competitor entries, material comparisons |
+| `Table, TableHead, TableRow, TableCell` | Parameter tables, spec comparisons, artifact indexes |
+| `Badge` | Status badges (pass/fail/TBD), category tags |
+| `Tabs, TabsList, TabsTrigger, TabsContent` | Multi-section artifacts (competitors / materials / standards) |
+| `Separator` | Section dividers |
+| `ScrollArea` | Long content panels |
+| `Tooltip` | Dimension annotations, hover details |
+| `Dialog` | Image lightboxes in visual reference boards |
+
+### When to Use Inline SVG
+
+L1 structural sketches embed SVG directly inside React components. Use the SVG
+style conventions from the SVG Sketch Styling section below — the same stroke
+colors, weights, and dash patterns apply inside JSX `<svg>` elements.
 
 ---
 
