@@ -4,7 +4,7 @@ A Claude skill that transforms product concepts into manufacturable design speci
 
 ## Origin
 
-Created from `industrial-design-agent.md` — a 520-line system prompt originally written for Claude Code / CLI harness use. Converted to a modular skill with progressive disclosure (SKILL.md + 7 reference files) so it only loads what's needed per phase.
+Created from `industrial-design-agent.md` — a 520-line system prompt originally written for Claude Code / CLI harness use. Converted to a modular skill with progressive disclosure (SKILL.md + 9 reference files) so it only loads what's needed per phase.
 
 ## Skill Structure
 
@@ -16,7 +16,8 @@ industrial-design/
 │   ├── capability-check.md         # Tool detection + fallback matrix
 │   ├── claude-md-template.md       # CLAUDE.md project context template (cross-session memory)
 │   ├── design-system.md            # Visual design system — colors, type, components, CSS boilerplate
-│   ├── research-workstreams.md     # 4 research workstreams + subagent delegation + image strategy
+│   ├── research-workstreams.md     # 4 research workstreams + orchestrator delegation + image strategy
+│   ├── research-subagent-prompt.md # Subagent prompt template with {{VARIABLE}} placeholders
 │   ├── rendering-pipeline.md       # L1/L2/L3 fidelity levels + DTS verification loop
 │   ├── artifact-registry.md        # Naming conventions, required artifacts, YAML source-of-truth files
 │   ├── engineering-standards.md    # Spec integrity policy, units, tolerancing, GD&T, rounding
@@ -24,8 +25,11 @@ industrial-design/
 │   └── spec-template.md            # Brief intake template + Phase 6 final spec format
 ├── evals/
 │   └── evals.json                  # 3 test cases with assertions
-├── scripts/                        # (placeholder — no scripts needed yet)
-└── assets/                         # (placeholder — no assets needed yet)
+├── scripts/
+│   ├── init-artifact.sh            # Scaffold React + Tailwind + shadcn/ui artifact project
+│   ├── bundle-artifact.sh          # Bundle artifact into single-file HTML
+│   └── shadcn-components.tar.gz    # Pre-packaged shadcn/ui components
+└── assets/
 ```
 
 ## How It Works
@@ -33,9 +37,9 @@ industrial-design/
 The skill guides Claude through 6 phases with explicit gates:
 
 1. **Intake** (🔓) — Parse brief against template, capability check, clarifying questions, project scaffolding (creates `CLAUDE.md` + directory structure)
-2. **Research** (🔓) — Spawns **4 parallel subagents** (Task tool, `researcher` type) for competitive intel, materials, standards, and visual references. Lead agent synthesizes after all complete.
+2. **Research** (🔓) — Lead agent acts as **orchestrator**: reads `research-subagent-prompt.md` template, fills variables per workstream, spawns **4 parallel subagents** (Task tool, `general-purpose` type, `haiku` model) for competitive intel, materials, standards, and visual references. Synthesizes and cross-references after all complete.
 3. **Ideation** (🔒) — 2-3 concepts with L1 sketches. Hard stop for user selection.
-4. **Refinement** (🔒) — Mood boards, L2 renders, dimensioned sketches. Optional canvas-design skill for high-fidelity mood boards. Hard stop for approval.
+4. **Refinement** (🔒) — Design language brief, mood boards, L2 renders, dimensioned sketches. Optional canvas-design skill for high-fidelity mood boards. Hard stop for approval.
 5. **FMEA** (🔓) — Failure mode analysis, mitigations folded into spec
 6. **Final Spec** (🔒) — Technical drawings, hero render, full spec sheet. Hard stop for sign-off.
 
