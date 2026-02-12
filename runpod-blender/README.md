@@ -130,22 +130,29 @@ The BlenderMCP addon auto-starts when Blender launches — no manual activation 
 
 ## How It Works
 
+The RunPod pod is an Ubuntu 22.04 Linux box with a dedicated GPU. During first-time setup, the full Blender 4.2 desktop application is downloaded and installed as a standalone binary on the pod's persistent volume (`/runpod/blender-4.2.0-linux-x64/`). It's the same Blender you'd run on a Linux workstation.
+
+Since the pod is headless (no physical monitor), Blender renders to a **virtual display** (Xvfb). **x11vnc** streams that virtual display to your laptop over an SSH tunnel, so you can watch Blender in real-time through a VNC viewer. Claude controls Blender through the MCP addon, which also runs on the pod and communicates over a separate SSH tunnel.
+
 ```
-Your Laptop                          RunPod GPU Pod
-┌──────────────────┐                ┌──────────────────────┐
-│  Claude Code     │───port 9876──▶│  Blender + MCP Addon │
-│  blender-mcp     │   SSH Tunnel   │  (auto-started)      │
-│                  │                │                      │
-│  VNC Viewer      │───port 5900──▶│  Xvfb + x11vnc       │
-│  (Screen Sharing)│                │  (virtual display)   │
-└──────────────────┘                │  GPU (RTX 4080/4090) │
-                                    └──────────────────────┘
+Your Laptop                          RunPod GPU Pod (Ubuntu 22.04)
+┌──────────────────┐                ┌──────────────────────────┐
+│  Claude Code     │───port 9876──▶│  Blender 4.2 (full app)  │
+│  blender-mcp     │   SSH Tunnel   │  + MCP Addon (auto-start)│
+│                  │                │                          │
+│  VNC Viewer      │───port 5900──▶│  Xvfb (virtual display)  │
+│  (Screen Sharing)│                │  + x11vnc (VNC server)   │
+└──────────────────┘                │                          │
+                                    │  GPU (RTX 4080/4090)     │
+                                    │  /runpod/ (persistent)   │
+                                    └──────────────────────────┘
 ```
 
-- **Xvfb**: Fake monitor so Blender can run on a headless server
-- **x11vnc**: Streams the fake monitor to your VNC viewer
-- **blender-mcp**: Bridge between Claude and Blender's Python API
-- **SSH tunnel**: Securely forwards both ports to your laptop
+- **Blender**: Full desktop app installed on the pod — renders using the pod's GPU via CUDA/OptiX
+- **Xvfb**: Virtual framebuffer that gives Blender a "screen" on the headless server
+- **x11vnc**: Streams the virtual display to your VNC viewer so you can watch live
+- **blender-mcp**: Bridge between Claude and Blender's Python API (runs inside Blender as an addon)
+- **SSH tunnel**: Securely forwards ports 9876 (MCP) and 5900 (VNC) to your laptop
 
 ---
 
