@@ -65,82 +65,83 @@ You are the lead designer. Delegate research to these structured workstreams, wh
 
 ## Research Orchestration
 
-**Delegation strategy:** Spawn each workstream as a parallel subagent via the Task tool.
+You are the **lead research orchestrator**. Your role is to coordinate, delegate, and
+synthesize — **NOT** to conduct primary research yourself. All primary research is
+performed by subagents that you spawn and monitor.
 
-Each subagent prompt should include:
-1. The workstream section below (mission, tasks, output artifact name)
-2. The product brief from Phase 1
-3. Capability check results (which tools are available)
-4. The **absolute** output file path (not relative — subagents may not share the lead agent's working directory)
-5. Image embedding instructions from the Reference Image Management section
-6. The **Research Process** instructions below (copy verbatim into the subagent prompt)
+### Step 1: Assessment & Planning
 
-### Research Process (include in every subagent prompt)
+Before spawning any subagents:
 
-Every research subagent must follow this structured process. Copy this section
-into each subagent's Task prompt.
+1. **Review the product brief** — identify key entities: competitors, materials, target markets, applicable standards
+2. **Assess complexity per workstream:**
+   - How many competitors need coverage? How many candidate materials?
+   - Is this a novel product category (sparse data) or established (abundant data)?
+   - Use complexity to set per-workstream research budgets (passed to subagents)
+3. **Confirm tool availability** from capability check results — note which tools subagents can use
+4. **Set per-workstream budgets:** standard = 8-12 calls, complex = up to 15, absolute max = 20
 
-**1. Planning phase — before any tool calls:**
-- Review the workstream mission and tasks
-- Identify the specific information needed (specs, prices, materials, standards, images)
-- Set a **research budget**: 8-12 tool calls for a standard workstream, up to 15 for
-  complex ones (e.g., competitive intel with many competitors). Do not exceed 15.
-- Plan queries — start broad, then narrow based on results
+### Step 2: Construct Subagent Prompts
 
-**2. Search → Extract → Synthesize loop (OODA):**
+1. Read the subagent prompt template: `references/research-subagent-prompt.md`
+2. For each of the 4 workstreams, substitute all `{{VARIABLE}}` placeholders:
 
-The core research loop is: **search broadly, then extract deeply from the best sources.**
+| Variable | Source |
+|----------|--------|
+| `{{WORKSTREAM_NAME}}` | Workstream heading from this file (e.g., "Competitive Intelligence") |
+| `{{WORKSTREAM_MISSION}}` | Mission statement from the workstream section |
+| `{{WORKSTREAM_TASKS}}` | Full task list from the workstream section (as markdown bullet list) |
+| `{{OUTPUT_ARTIFACT}}` | Artifact ID (e.g., `P2-COMP-01.md`) |
+| `{{OUTPUT_PATH}}` | **Absolute** path to the output file in the project's `artifacts/` directory |
+| `{{PRODUCT_BRIEF}}` | Condensed product brief from Phase 1 |
+| `{{CAPABILITY_RESULTS}}` | Tool availability summary from the capability check |
+| `{{IMAGE_INSTRUCTIONS}}` | Image embedding instructions from the Reference Image Management section below (for Visual References workstream only — leave empty for other workstreams) |
 
+### Step 3: Spawn Subagents (Parallel)
+
+Spawn all 4 workstreams as **parallel** Task tool calls in a **single response**.
+
+Use these exact parameters for each:
 ```
-OBSERVE  → What information do I have? What's still missing?
-ORIENT   → Which sources look most promising? What queries would fill gaps?
-DECIDE   → Choose the next tool call (search, extract, or fetch)
-ACT      → Execute the tool call
+prompt:            [filled-in template from Step 2]
+subagent_type:     "general-purpose"
+model:             "haiku"
+description:       "Phase 2 Research: [Workstream Name]"
+run_in_background: true
 ```
 
-**Critical rule:** Do NOT just run searches and summarize snippets. After each
-search, identify the 2-3 most promising result URLs and **use WebFetch or
-tavily_extract to pull full page content** from them. Search snippets are
-summaries — the real data (exact specs, material grades, pricing, tolerances)
-lives on the full page.
+**Model selection note:** In Claude Code, use `"haiku"` for cost-efficient research
+subagents. In other harnesses, use the equivalent cheap/fast model (e.g., Gemini Flash,
+GPT-4o-mini).
 
-Typical pattern per research question:
-1. `tavily_search` or `WebSearch` — broad query, get result URLs (1 call)
-2. `WebFetch` or `tavily_extract` — pull full content from top 2-3 results (1-2 calls)
-3. Synthesize findings, identify gaps
-4. Targeted follow-up search if gaps remain (1 call)
+### Step 4: Monitor & Synthesize
 
-**3. Query strategy:**
-- Keep queries **short** (under 6 words) — longer queries return worse results
-- Start moderately broad: "wearable ultrasound devices" not "wearable continuous
-  doppler ultrasound blood clot monitoring device for post-surgical patients"
-- If results are abundant, narrow: "wearable ultrasound DVT monitor specs"
-- If results are sparse, broaden: "portable doppler device"
-- Never repeat the exact same query — rephrase or adjust scope
-- Use parallel tool calls when queries are independent (e.g., search for two
-  different competitors simultaneously)
+**While subagents run:**
+- Prepare the synthesis structure (cross-reference matrix, gap checklist)
+- Plan cross-reference questions (e.g., do candidate materials meet identified standards?)
 
-**4. Source quality evaluation:**
-After each tool result, assess critically:
-- Is this a primary source (manufacturer, standards body, peer-reviewed) or
-  aggregator/blog?
-- Does it contain specific data (dimensions, material grades, prices) or just
-  marketing language?
-- Are claims backed by evidence, or speculative ("could", "may", "expected to")?
-- Flag uncertain or conflicting information in the output — do not present
-  speculation as fact
+**After all subagents complete:**
+1. Read each output artifact
+2. Cross-reference findings across workstreams:
+   - Materials ↔ Standards (do candidate materials comply with identified regulations?)
+   - Competitors ↔ Costs (how do competitor price points align with material costs?)
+   - Visual references ↔ Material finishes (do aesthetic references match feasible finishes?)
+3. Identify critical gaps — if any exist, spawn a targeted follow-up subagent using the same pattern
+4. Run **Visual Reference Post-Processing** (see below)
+5. Register all artifacts in `artifact-index.md`
+6. Present the competitive landscape board to the user
 
-**5. When to stop:**
-- Stop when you have substantive data for each task in your workstream
-- Stop when additional queries return diminishing results (same sources, no new data)
-- Stop at 15 tool calls maximum — synthesize what you have
-- It is better to deliver a well-organized report from 8 high-quality sources than
-  a sprawling dump from 20 shallow searches
+### Subagent Research Process
+
+The subagent research process (OODA loop, query strategy, source evaluation, budgets)
+is fully defined in `references/research-subagent-prompt.md`. Read that template, fill
+the variables per workstream, and pass it as the Task tool's `prompt` parameter. Do NOT
+duplicate the research process instructions here — the template is the single source of truth.
 
 ### Subagent Capability Constraints
 
-Subagents spawned via the Task tool may have DIFFERENT capabilities than the
-lead agent. In particular:
+Subagents spawned via the Task tool (`subagent_type: "general-purpose"`, `model: "haiku"`)
+may have DIFFERENT capabilities than the lead agent. In particular:
 
 - **Bash/curl access:** Subagents may not be able to execute shell commands
   or make outbound HTTP requests. Do NOT instruct subagents to download files
