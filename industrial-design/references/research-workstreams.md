@@ -73,6 +73,69 @@ Each subagent prompt should include:
 3. Capability check results (which tools are available)
 4. The **absolute** output file path (not relative — subagents may not share the lead agent's working directory)
 5. Image embedding instructions from the Reference Image Management section
+6. The **Research Process** instructions below (copy verbatim into the subagent prompt)
+
+### Research Process (include in every subagent prompt)
+
+Every research subagent must follow this structured process. Copy this section
+into each subagent's Task prompt.
+
+**1. Planning phase — before any tool calls:**
+- Review the workstream mission and tasks
+- Identify the specific information needed (specs, prices, materials, standards, images)
+- Set a **research budget**: 8-12 tool calls for a standard workstream, up to 15 for
+  complex ones (e.g., competitive intel with many competitors). Do not exceed 15.
+- Plan queries — start broad, then narrow based on results
+
+**2. Search → Extract → Synthesize loop (OODA):**
+
+The core research loop is: **search broadly, then extract deeply from the best sources.**
+
+```
+OBSERVE  → What information do I have? What's still missing?
+ORIENT   → Which sources look most promising? What queries would fill gaps?
+DECIDE   → Choose the next tool call (search, extract, or fetch)
+ACT      → Execute the tool call
+```
+
+**Critical rule:** Do NOT just run searches and summarize snippets. After each
+search, identify the 2-3 most promising result URLs and **use WebFetch or
+tavily_extract to pull full page content** from them. Search snippets are
+summaries — the real data (exact specs, material grades, pricing, tolerances)
+lives on the full page.
+
+Typical pattern per research question:
+1. `tavily_search` or `WebSearch` — broad query, get result URLs (1 call)
+2. `WebFetch` or `tavily_extract` — pull full content from top 2-3 results (1-2 calls)
+3. Synthesize findings, identify gaps
+4. Targeted follow-up search if gaps remain (1 call)
+
+**3. Query strategy:**
+- Keep queries **short** (under 6 words) — longer queries return worse results
+- Start moderately broad: "wearable ultrasound devices" not "wearable continuous
+  doppler ultrasound blood clot monitoring device for post-surgical patients"
+- If results are abundant, narrow: "wearable ultrasound DVT monitor specs"
+- If results are sparse, broaden: "portable doppler device"
+- Never repeat the exact same query — rephrase or adjust scope
+- Use parallel tool calls when queries are independent (e.g., search for two
+  different competitors simultaneously)
+
+**4. Source quality evaluation:**
+After each tool result, assess critically:
+- Is this a primary source (manufacturer, standards body, peer-reviewed) or
+  aggregator/blog?
+- Does it contain specific data (dimensions, material grades, prices) or just
+  marketing language?
+- Are claims backed by evidence, or speculative ("could", "may", "expected to")?
+- Flag uncertain or conflicting information in the output — do not present
+  speculation as fact
+
+**5. When to stop:**
+- Stop when you have substantive data for each task in your workstream
+- Stop when additional queries return diminishing results (same sources, no new data)
+- Stop at 15 tool calls maximum — synthesize what you have
+- It is better to deliver a well-organized report from 8 high-quality sources than
+  a sprawling dump from 20 shallow searches
 
 ### Subagent Capability Constraints
 
