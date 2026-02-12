@@ -19,6 +19,26 @@ A **Claude Code plugin** for photorealistic product rendering in Blender — loc
 
 ---
 
+## Prerequisites
+
+| Dependency | What It Is | Required For |
+|-----------|-----------|-------------|
+| [Claude Code](https://claude.com/claude-code) | Anthropic's CLI for Claude | Running the plugin |
+| [uv](https://docs.astral.sh/uv/) | Python package runner | Running `blender-mcp` via `uvx` |
+| [blender-mcp](https://github.com/ahujasid/blender-mcp) | Open source MCP server that bridges Claude and Blender's Python API | All Blender control (auto-installed by `uvx`, no manual setup) |
+| [Python 3.10+](https://www.python.org/) | Runtime for blender-mcp and RunPod scripts | Everything |
+| [RunPod account](https://runpod.io) | Cloud GPU provider | Cloud rendering (not needed for local) |
+| [runpodctl](https://github.com/runpod/runpodctl) | RunPod CLI for SSH key management | Cloud rendering (not needed for local) |
+| **VNC viewer** or **web browser** | View Blender's screen on the remote pod | Cloud rendering (not needed for local) |
+
+**For local rendering only**, you also need [Blender 3.0+](https://www.blender.org/download/) installed on your machine.
+
+**For cloud rendering**, Blender is installed on the pod automatically during first-time setup. You view it via either:
+- **Browser (easiest):** Open `http://localhost:6080/vnc.html` after the SSH tunnel is up — uses noVNC, no install needed
+- **Native VNC client:** Connect to `vnc://localhost:5900` (macOS Screen Sharing works, or use [RealVNC](https://www.realvnc.com/en/connect/download/viewer/) on Windows)
+
+---
+
 ## Install the Plugin
 
 ### 1. Clone the skills repo
@@ -116,8 +136,12 @@ Claude: [stops pod, kills tunnel]
         "Pod stopped. No more charges."
 ```
 
-### VNC Connection
+### Viewing Blender on the Pod
 
+**Browser (easiest — no install required):**
+Open `http://localhost:6080/vnc.html` and enter the VNC password (`blender123` by default).
+
+**Native VNC client:**
 - **macOS**: Finder > Cmd+K > `vnc://localhost:5900`
 - **Linux**: `vncviewer localhost:5900`
 - **Windows**: RealVNC Viewer > `localhost:5900`
@@ -140,8 +164,9 @@ Your Laptop                          RunPod GPU Pod (Ubuntu 22.04)
 │  Claude Code     │───port 9876──▶│  Blender 4.2 (full app)  │
 │  blender-mcp     │   SSH Tunnel   │  + MCP Addon (auto-start)│
 │                  │                │                          │
-│  VNC Viewer      │───port 5900──▶│  Xvfb (virtual display)  │
-│  (Screen Sharing)│                │  + x11vnc (VNC server)   │
+│  Browser         │───port 6080──▶│  noVNC (web viewer)      │
+│  or VNC Viewer   │───port 5900──▶│  x11vnc ← Xvfb (virtual │
+│                  │                │           display)       │
 └──────────────────┘                │                          │
                                     │  GPU (RTX 4080/4090)     │
                                     │  /runpod/ (persistent)   │
@@ -149,10 +174,11 @@ Your Laptop                          RunPod GPU Pod (Ubuntu 22.04)
 ```
 
 - **Blender**: Full desktop app installed on the pod — renders using the pod's GPU via CUDA/OptiX
+- **[blender-mcp](https://github.com/ahujasid/blender-mcp)**: Open source MCP server that bridges Claude and Blender's Python API (runs inside Blender as an addon)
 - **Xvfb**: Virtual framebuffer that gives Blender a "screen" on the headless server
-- **x11vnc**: Streams the virtual display to your VNC viewer so you can watch live
-- **blender-mcp**: Bridge between Claude and Blender's Python API (runs inside Blender as an addon)
-- **SSH tunnel**: Securely forwards ports 9876 (MCP) and 5900 (VNC) to your laptop
+- **x11vnc**: Streams the virtual display over VNC protocol (port 5900)
+- **noVNC**: Web-based VNC viewer — open `localhost:6080` in a browser, no VNC client install needed
+- **SSH tunnel**: Securely forwards ports 9876 (MCP), 5900 (VNC), and 6080 (noVNC) to your laptop
 
 ---
 
