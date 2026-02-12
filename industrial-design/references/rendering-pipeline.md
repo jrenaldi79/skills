@@ -30,6 +30,15 @@ You may skip L2 only if it does not serve the user's stated goal, and only after
 - Produce a production-grade prompt package for the user to run externally
 - Ask them to save results to `./artifacts/images/`
 
+**Alternative — Canvas-Design Skill:**
+When no image-gen LLM is available, the `/example-skills:canvas-design` skill (invoked via the Skill tool) can produce high-fidelity `.png` or `.pdf` visual artifacts that communicate material feel, color story, and emotional tone. This is particularly effective for mood boards (`P4-MOOD-01`) and material boards (`P4-MATBOARD-01`). To use it:
+1. Invoke the skill via the Skill tool
+2. Provide the chosen concept, material palette, and aesthetic direction as the input — the skill will treat this as its subtle reference
+3. The skill creates a design philosophy, then expresses it as a polished visual artifact
+4. Save the output to `./artifacts/` and register in `artifact-index.md`
+
+Note: Canvas-design outputs are abstract and compositional — they convey *feeling*, not engineering geometry. They complement but do not replace L1 structural sketches or L3 CAD documentation.
+
 ---
 
 ## Level 3: High Fidelity — CAD-Ready Specification (Blender / Fusion 360)

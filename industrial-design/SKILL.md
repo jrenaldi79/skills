@@ -111,7 +111,9 @@ Hard gates require explicit user approval before proceeding.
 
 ### Phase 4: Refinement & Design Direction 🔒
 - **4a** Mood board (`P4-MOOD-01`) + material board (`P4-MATBOARD-01`) 🔓
+  - **Optional:** Use the `/example-skills:canvas-design` skill (Skill tool) for museum-quality mood boards and material boards. The skill generates a design philosophy then expresses it as a polished `.png` or `.pdf`. Feed it the chosen concept, material palette, and aesthetic direction from Phase 3 as its subtle reference input.
 - **4b** Inspiration renders — L2 fidelity 🔒. See `references/rendering-pipeline.md`
+  - **Optional:** If no image-gen LLM is available, the canvas-design skill can produce high-fidelity visual artifacts that convey material feel, color story, and emotional tone as an alternative to L2 prompt packages.
 - **4c** Dimensioned sketch + update `design-parameters.yaml` and `materials-and-finishes.yaml` 🔓
 - **STOP** — Ask for approval on refined design direction.
 
