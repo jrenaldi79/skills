@@ -10,11 +10,13 @@ Created from `industrial-design-agent.md` — a 520-line system prompt originall
 
 ```
 industrial-design/
-├── SKILL.md                        # Core instructions (174 lines)
-│                                     Identity, principles, 6-phase workflow, reference table
+├── SKILL.md                        # Core instructions — identity, principles, 6-phase workflow
+├── industrial-design.skill         # Packaged skill (zip) for Claude Desktop upload
 ├── references/
 │   ├── capability-check.md         # Tool detection + fallback matrix
-│   ├── research-workstreams.md     # 4 research workstreams + image management + IP disclaimer
+│   ├── claude-md-template.md       # CLAUDE.md project context template (cross-session memory)
+│   ├── design-system.md            # Visual design system — colors, type, components, CSS boilerplate
+│   ├── research-workstreams.md     # 4 research workstreams + subagent delegation + image strategy
 │   ├── rendering-pipeline.md       # L1/L2/L3 fidelity levels + DTS verification loop
 │   ├── artifact-registry.md        # Naming conventions, required artifacts, YAML source-of-truth files
 │   ├── engineering-standards.md    # Spec integrity policy, units, tolerancing, GD&T, rounding
@@ -30,14 +32,22 @@ industrial-design/
 
 The skill guides Claude through 6 phases with explicit gates:
 
-1. **Intake** (🔓) — Parse brief against template, capability check, clarifying questions
-2. **Research** (🔓) — Competitive analysis, materials, standards, visual references
+1. **Intake** (🔓) — Parse brief against template, capability check, clarifying questions, project scaffolding (creates `CLAUDE.md` + directory structure)
+2. **Research** (🔓) — Spawns **4 parallel subagents** (Task tool, `researcher` type) for competitive intel, materials, standards, and visual references. Lead agent synthesizes after all complete.
 3. **Ideation** (🔒) — 2-3 concepts with L1 sketches. Hard stop for user selection.
-4. **Refinement** (🔒) — Mood boards, L2 renders, dimensioned sketches. Hard stop for approval.
+4. **Refinement** (🔒) — Mood boards, L2 renders, dimensioned sketches. Optional canvas-design skill for high-fidelity mood boards. Hard stop for approval.
 5. **FMEA** (🔓) — Failure mode analysis, mitigations folded into spec
 6. **Final Spec** (🔒) — Technical drawings, hero render, full spec sheet. Hard stop for sign-off.
 
-Reference files load only when the workflow reaches their phase, keeping context lean.
+`CLAUDE.md` is updated at every phase gate so new sessions can resume mid-project. Reference files load only when the workflow reaches their phase, keeping context lean.
+
+### Design System
+
+All HTML artifacts share a consistent visual language (Modern Product Studio style) defined in `references/design-system.md` — warm earth tones, system font stacks, standardized components (cards, tables, tags, annotations). No external stylesheets or fonts (blocked by Cowork CSP).
+
+### Image Strategy
+
+Visual reference boards use **base64 data URI embedding** for images. A two-stage build process handles this: the research subagent collects external image URLs, then the lead agent fetches and base64-encodes them into the final HTML. This ensures images render in all viewers including Cowork's CSP-restricted artifact viewer.
 
 ## Installation
 
