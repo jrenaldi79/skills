@@ -168,30 +168,24 @@ When delegating to subagents, the lead agent should:
 ### Visual Reference Post-Processing (Required)
 
 The subagent produces a draft HTML with external `<img src="https://...">` URLs.
-The Cowork artifact viewer enforces a Content Security Policy (CSP) that **blocks
-all external resource loading** — external `<img>` tags and Google Fonts `<link>`
-tags render as blank. The only reliable image strategy is **base64 data URI embedding**.
+These must be converted to base64 data URIs before delivery (the Cowork artifact
+viewer's CSP blocks external resource loading).
 
-**Two-stage build process:**
+**Post-processing procedure** (uses `references/image-factory.md`):
 
-**Stage 1 (subagent):** Build the HTML structure with external image URLs as placeholders.
-Collect the best image URLs from Tavily search results (use `include_images: true`).
-
-**Stage 2 (lead agent post-processing):** After the subagent completes:
-1. Read `P2-VISREF-01.html`
-2. Extract all `<img src="https://...">` URLs
-3. For each URL, fetch the image and convert to a base64 data URI:
-   - Use `curl -sL [url] | base64` (or Python equivalent) to fetch and encode
-   - Replace the `src` with `src="data:image/jpeg;base64,[encoded_data]"`
-   - If a fetch fails, keep the source URL as a visible `<a>` link and remove the `<img>` tag
-4. Verify the final HTML contains at least 5 `data:image` URIs
-5. Search for "not available" or "no-image" — if found, the deliverable FAILS
-6. If verification fails: rebuild using image URLs from Competitive Intelligence
+1. Read `P2-VISREF-01.html` and extract all `<img src="https://...">` URLs
+2. Run **Image Factory Stage 2** (fetch) — method depends on environment:
+   - If bash/curl available: fetch and base64-encode directly
+   - If sandbox (curl blocked): use Desktop Commander MCP pipeline
+3. Run **Image Factory Stage 3** (embed) — replace URLs with data URIs
+4. Write the final HTML back to `P2-VISREF-01.html`
+5. **Verify:** final HTML contains at least 5 `data:image` URIs
+6. Search for "not available" or "no-image" — if found, the deliverable FAILS
+7. If verification fails: rebuild using image URLs from Competitive Intelligence
    and Material Research outputs
-7. Write the final post-processed file back to `P2-VISREF-01.html`
 
-**Size guidance:** Base64 encoding adds ~33% overhead. Target images at 600-800px
-wide (resize if needed with `sips` or ImageMagick) to keep the HTML file under 10MB.
+See `references/image-factory.md` for full stage definitions, size management,
+and fallback behavior.
 
 ---
 
@@ -208,25 +202,11 @@ If you research patents or design registrations:
 
 ### Image Embedding Strategy
 
-The Cowork artifact viewer enforces a **Content Security Policy (CSP)** that blocks
-all external resource loading. External `<img src="https://...">` tags and Google
-Fonts `<link>` tags are silently blocked and render as blank. The only fully reliable
-image strategy is **base64 data URI embedding**.
-
-**Final delivery format:**
-```html
-<img src="data:image/jpeg;base64,/9j/4AAQ..." alt="[descriptive alt text]">
-```
-
-The image data lives inside the HTML file itself — no network request needed.
-
-**How the two-stage build works:**
-
-1. **Subagent stage:** Use Tavily search with `include_images: true` to find images.
-   Build the HTML with external `<img src="https://...">` tags as placeholders.
-2. **Lead agent post-processing:** Fetch each image URL, base64-encode it, and
-   replace the `src` attribute with a `data:image/...;base64,...` URI. See the
-   Visual Reference Post-Processing section for the full procedure.
+All HTML artifacts use **base64 data URI embedding** for images. The full pipeline
+(fetch method selection, encoding, embedding, fallbacks) is defined in
+`references/image-factory.md`. The subagent builds HTML with external URLs as
+placeholders; the lead agent post-processes them into data URIs using whichever
+fetch method is available (bash/curl or Desktop Commander MCP).
 
 **Image URL quality checks (for the subagent stage):**
 - Prefer manufacturer/official press images (higher resolution, less likely to break)

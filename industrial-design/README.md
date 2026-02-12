@@ -61,6 +61,12 @@ All HTML artifacts share a consistent visual language (Modern Product Studio sty
 
 Visual reference boards use **base64 data URI embedding** for images. A two-stage build process handles this: the research subagent collects external image URLs, then the lead agent fetches and base64-encodes them into the final HTML. This ensures images render in all viewers including Cowork's CSP-restricted artifact viewer.
 
+When running inside the Cowork sandbox (where outbound HTTP is blocked by the proxy),
+the skill uses Desktop Commander MCP to fetch images from the host machine. See
+`references/image-factory.md` for the full pipeline. Desktop Commander must be
+installed as an MCP server — see `references/capability-check.md` for setup. This
+fallback is not needed when running via Claude Code or other CLIs with direct bash/curl access.
+
 ## Installation
 
 Copy `industrial-design/` into your skills directory:
