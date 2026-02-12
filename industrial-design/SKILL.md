@@ -74,6 +74,7 @@ Every design decision must be grounded in these principles:
 - **File-first output** — Write SVG/HTML/code to files in `artifacts/`, not to console.
 - **Relative paths** — Use relative paths from the project root (e.g., `./artifacts/P3-SKETCH-01.html`).
 - **Static artifacts** — HTML/React artifacts must be single-file, self-contained (embedded CSS/JS).
+- **Design system** — All HTML artifacts must use the styling from `references/design-system.md`. Copy the CSS boilerplate and use the documented tokens/components. Do not improvise styling.
 - **Standard library first** — Prefer standard shell tools (`grep`, `sed`, `curl`, `jq`) over installing new software.
 
 ---
@@ -188,6 +189,7 @@ Read `references/costing-policy.md` for the full policy.
 |------|-------------|
 | `references/capability-check.md` | Start of every project (Phase 1) |
 | `references/claude-md-template.md` | Phase 1 (project scaffolding — copy into project root) |
+| `references/design-system.md` | Before creating ANY HTML artifact (CSS, tokens, boilerplate) |
 | `references/research-workstreams.md` | Phase 2 (research delegation) |
 | `references/rendering-pipeline.md` | Phases 3–6 (any visual output) |
 | `references/artifact-registry.md` | When creating or tracking any deliverable |
