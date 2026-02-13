@@ -164,8 +164,19 @@ Hard gates require explicit user approval before proceeding.
 - **Regenerate dashboard:** Run `python scripts/generate-dashboard.py .` to update `index.html`
 
 ### Phase 6: Final Specification 🔒
-- `P6-TECHDRAW-01` — L3 drawings with tolerances and GD&T where appropriate
+- `P6-TECHDRAW-01` — L3 technical drawing / CAD model 🔒
+  1. Write DTS (REQUIRED — see `references/rendering-pipeline.md` required L3 criteria)
+  2. Include all mandatory dimensional, feature, and quality criteria from `design-parameters.yaml`
+  3. Generate model (CAD MCP) or dimensioned drawing (fallback) per L3 workflow
+  4. Run DTS evaluation — parametric check against `design-parameters.yaml`, visual check against P4-DIMSKETCH-01
+  5. If DTS FAIL → modify and re-verify
+  6. If DTS PASS → present to user
+  7. Log DTS result in `artifact-index.md`
 - `P6-HERORENDER-01` — if CAD tools available; otherwise best visuals with clear caveats
+  1. Write DTS (include dimensional consistency with approved L3 model/drawing)
+  2. Generate hero render views from CAD model, or L2 render via `generate-render.py`
+  3. Run DTS evaluation — cross-reference against L3 model and design language
+  4. Log DTS result in `artifact-index.md`
 - `P6-SPECSHEET-01` — complete written spec (see `references/spec-template.md` for format)
 - Finalize: `artifact-index.md`, `design-parameters.yaml`, `materials-and-finishes.yaml`, `decision-log.md`
 - **Before presenting gate output:** Update `./CLAUDE.md` — mark Phase 6 complete, finalize Artifact Map and Key Decisions, clear What's Next

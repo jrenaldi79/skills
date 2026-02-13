@@ -96,13 +96,30 @@ Even with these techniques, the DTS evaluation step is essential — always veri
 - Primary: Blender MCP or Fusion 360 MCP (only if confirmed available via capability check)
 - Fallback: dimensioned technical drawings (SVG/HTML) + parameter files
 
-**Action (if CAD MCP available):**
-- Generate model/mesh according to the parameter file
-- Render orthographic and perspective views to `./artifacts/images/`
+### CAD MCP Workflow (Blender or Fusion 360)
 
-**Action (if CAD MCP NOT available):**
-- Generate high-precision drawings with tolerances and GD&T callouts where appropriate
-- Provide a CAD operator handoff pack: drawings + parameter file + manufacturing notes
+1. Write DTS for the CAD model (REQUIRED — see required L3 criteria below)
+2. Read `design-parameters.yaml` and `materials-and-finishes.yaml` as the parametric source of truth
+3. Generate model/mesh according to the parameter file
+4. **Parametric verification** — query the model to check DTS criteria:
+   - Bounding box dimensions (compare against envelope in `design-parameters.yaml`)
+   - Wall thicknesses at critical sections
+   - Feature positions and sizes
+5. Render orthographic and perspective views to `./artifacts/images/`
+6. **Visual verification** — ingest rendered views, cross-reference against P4-DIMSKETCH-01 and P3 sketches
+7. If DTS FAIL → modify model, re-verify
+8. If DTS PASS → proceed to technical drawings and hero render
+9. Log DTS result in `artifact-index.md`
+
+### Fallback Workflow (No CAD MCP)
+
+1. Write DTS for the technical drawing (REQUIRED — see required L3 criteria below)
+2. Generate high-precision dimensioned drawings (SVG/HTML) with tolerances and GD&T callouts where appropriate
+3. **Self-evaluate** — verify every dimension in the drawing matches `design-parameters.yaml`
+4. Include section views showing internal features (wall thickness, ribs, bosses)
+5. Provide a CAD operator handoff pack: drawings + parameter file + manufacturing notes
+6. If DTS FAIL → correct drawings, re-verify
+7. Log DTS result in `artifact-index.md`
 
 ---
 
@@ -161,11 +178,49 @@ MUST NOT HAVE:
 - [ ] Proportions that contradict the side-profile sketch
 ```
 
+### Required DTS Criteria for L3 CAD Outputs
+
+Every L3 DTS MUST include these checks. L3 is engineering-grade — verification is parametric (query the model or inspect the drawing), not just visual.
+
+```
+MUST HAVE — Dimensional Accuracy:
+- [ ] Bounding box matches design-parameters.yaml envelope dimensions
+      within general tolerance (ISO 2768-mK unless overridden)
+- [ ] All critical-to-function dimensions have explicit tolerances
+      (Reference: design-parameters.yaml + engineering-standards.md §3–4)
+- [ ] Wall thicknesses meet minimum for manufacturing process
+      (Reference: materials-and-finishes.yaml → process constraints)
+- [ ] Draft angles present on all molded/cast surfaces (typically ≥1°)
+- [ ] Fillet/chamfer radii match design-parameters.yaml
+
+MUST HAVE — Feature Completeness:
+- [ ] All features from P4-DIMSKETCH-01 are present (holes, bosses,
+      ribs, snap-fits, gasket grooves, windows, etc.)
+- [ ] Assembly interfaces match mating part dimensions
+- [ ] Datum references defined per engineering-standards.md §4
+- [ ] GD&T applied to critical-to-function features (sealing faces,
+      hole patterns, mating surfaces)
+
+MUST HAVE — Model/Drawing Quality:
+- [ ] No self-intersecting or non-manifold geometry (CAD MCP path)
+- [ ] Section views show internal features: wall thickness, ribs,
+      bosses, internal channels (drawing path)
+- [ ] Materials and finishes called out per materials-and-finishes.yaml
+- [ ] All dimensions labeled per spec integrity policy
+      (Verified/User Requirement/Proposed Target)
+
+MUST NOT HAVE:
+- [ ] Dimensions that contradict design-parameters.yaml
+- [ ] Unlabeled or untoleranced critical dimensions
+- [ ] Features not in the approved design (P3 sketch + P4 refinement)
+- [ ] Missing section views for enclosed/internal geometry
+```
+
 ## Evaluation Rules by Fidelity
 
 - **L1 (SVG/HTML):** Self-evaluate by inspecting your own code and checking all criteria.
 
-- **L2/L3 (Images/Renders):**
+- **L2 (Rendered Images):**
   1. **Ingest** the generated image (Read tool or vision inspection)
   2. **Cross-reference** against these existing artifacts:
      - P3 sketch side profile → Does the thickness/height look correct?
@@ -175,6 +230,18 @@ MUST NOT HAVE:
   3. **Score** each DTS criterion as PASS or FAIL
   4. If ANY "MUST HAVE" fails → regenerate with a corrected prompt before presenting to user
   5. If vision inspection is NOT available → explicitly flag which DTS criteria require user visual confirmation and ask before proceeding
+
+- **L3 (CAD Models / Technical Drawings):**
+  1. **Parametric check** (CAD MCP path): query the model for bounding box,
+     wall thicknesses, feature dimensions. Compare against `design-parameters.yaml`.
+  2. **Drawing check** (fallback path): inspect every annotated dimension
+     in the SVG/HTML against `design-parameters.yaml`. Verify tolerances
+     and GD&T callouts against `engineering-standards.md`.
+  3. **Visual check**: ingest rendered orthographic views or the drawing itself.
+     Cross-reference against P4-DIMSKETCH-01 for feature placement and proportions.
+  4. **Score** each DTS criterion as PASS or FAIL
+  5. If ANY "MUST HAVE" fails → modify model/drawing and re-verify
+  6. Present to user only after DTS PASS
 
 ## Verification Log
 
