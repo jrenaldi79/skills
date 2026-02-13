@@ -1,0 +1,13 @@
+{
+  "name": "jrenaldi-skills",
+  "owner": {
+    "name": "John Renaldi"
+  },
+  "plugins": [
+    {
+      "name": "runpod-blender",
+      "source": "./runpod-blender",
+      "description": "Photorealistic product rendering in Blender via MCP — locally or on cloud GPUs (RunPod)"
+    }
+  ]
+}
