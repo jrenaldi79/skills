@@ -66,6 +66,7 @@ industrial-design/
 │   ├── research-workstreams.md     # 4 research workstreams + orchestrator delegation + image strategy
 │   ├── research-subagent-prompt.md # Subagent prompt template with {{VARIABLE}} placeholders
 │   ├── rendering-pipeline.md       # L1/L2/L3 fidelity levels + DTS verification loop
+│   ├── cad-build-protocol.md      # CAD session discipline: spec-driven build, reference QA, component verification
 │   ├── image-factory.md            # Base64 image embedding pipeline + sandbox fallback
 │   ├── artifact-registry.md        # Naming conventions, required artifacts, YAML source-of-truth files
 │   ├── engineering-standards.md    # Spec integrity policy, units, tolerancing, GD&T, rounding

@@ -240,3 +240,4 @@ Read `references/costing-policy.md` for the full policy.
 | `references/spec-template.md` | Phase 1 (brief template) and Phase 6 (final spec format) |
 | `scripts/generate-dashboard.py` | Every phase gate (regenerate project dashboard) |
 | `scripts/generate-render.py` | Phase 4 (L2 renders) and Phase 6 (hero render) |
+| `references/cad-build-protocol.md` | Phase 6 (only if CAD MCP available) |

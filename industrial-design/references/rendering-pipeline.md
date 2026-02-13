@@ -98,6 +98,8 @@ Even with these techniques, the DTS evaluation step is essential — always veri
 
 ### CAD MCP Workflow (Blender or Fusion 360)
 
+**Before starting:** Read `references/cad-build-protocol.md` for spec-driven build discipline, reference image QA, and post-modification verification procedures.
+
 1. Write DTS for the CAD model (REQUIRED — see required L3 criteria below)
 2. Read `design-parameters.yaml` and `materials-and-finishes.yaml` as the parametric source of truth
 3. Generate model/mesh according to the parameter file
