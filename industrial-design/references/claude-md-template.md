@@ -44,6 +44,7 @@
 | Vision Inspection | [status] |
 | CAD MCP (Blender/Fusion) | [status] |
 | Desktop Commander MCP | [status] |
+| Image Generation API | [status] |
 
 ## Active Design Direction
 <!-- Updated after Phase 3 concept selection and Phase 4 refinement -->

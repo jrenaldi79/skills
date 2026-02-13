@@ -77,6 +77,7 @@ industrial-design/
 │   ├── init-artifact.sh            # Scaffold React + Tailwind + shadcn/ui artifact project
 │   ├── bundle-artifact.sh          # Bundle artifact into single-file HTML
 │   ├── generate-dashboard.py       # Generate index.html project dashboard
+│   ├── generate-render.py          # Gemini API image generation (master + variation modes)
 │   ├── fetch-images.py             # Fetch images as base64 data URIs (host-side)
 │   ├── embed-images.py             # Replace external URLs with data URIs in HTML
 │   └── shadcn-components.tar.gz    # Pre-packaged shadcn/ui components
@@ -90,7 +91,7 @@ Each phase produces specific artifacts and ends at a gate. Hard gates (locked) r
 1. **Intake** (soft) — Parse brief against template, run capability check, ask clarifying questions, scaffold project directory with `CLAUDE.md`
 2. **Research** (soft) — Orchestrate 4 parallel research subagents, synthesize findings, post-process visual references with base64 image embedding
 3. **Ideation** (hard) — Generate 2-3 concepts with L1 structural sketches, present trade-offs. Stop and wait for user to select a direction.
-4. **Refinement** (hard) — Design language brief, mood boards, material boards, L2 inspiration renders, dimensioned sketches with parameter files. Stop for approval.
+4. **Refinement** (hard) — Design language brief, mood boards, material boards, L2 inspiration renders via two-stage master-conditioned workflow (master render + conditioned variations, all base64-embedded), dimensioned sketches with parameter files. Stop for approval.
 5. **FMEA** (soft) — Failure mode analysis, mitigations folded back into specs and parameters
 6. **Final Spec** (hard) — L3 technical drawings with tolerances and GD&T, hero render, complete spec sheet. Stop for sign-off.
 
@@ -103,12 +104,12 @@ Visual outputs move through three fidelity levels, each serving a different purp
 | Level | Name | Purpose | Tools |
 |-------|------|---------|-------|
 | L1 | Structural Sketches | Form, proportion, layout | React + Tailwind + inline SVG |
-| L2 | Inspiration Renders | Materials, color, emotional tone | Image-gen LLM or canvas-design skill |
+| L2 | Inspiration Renders | Materials, color, emotional tone | Image-gen API (`scripts/generate-render.py`) or canvas-design skill |
 | L3 | CAD-Ready Spec | Engineering documentation | Blender/Fusion MCP or dimensioned drawings |
 
 ### Image Embedding
 
-All HTML artifacts use base64 data URI embedding so images render in any viewer, including environments with restrictive Content Security Policies. The primary path uses bash/curl directly. In sandboxed environments where outbound HTTP is blocked (e.g., Cowork), the skill falls back to Desktop Commander MCP to fetch images from the host machine. See `references/image-factory.md` for the pipeline and `references/capability-check.md` for setup.
+All HTML artifacts use base64 data URI embedding so images render in any viewer, including environments with restrictive Content Security Policies. This applies to both web-fetched images and locally generated renders (from `scripts/generate-render.py`, which writes `.b64.txt` companion files). The primary fetch path uses bash/curl directly. In sandboxed environments where outbound HTTP is blocked (e.g., Cowork), the skill falls back to Desktop Commander MCP to fetch images from the host machine. See `references/image-factory.md` for the pipeline and `references/capability-check.md` for setup.
 
 ### Design System
 

@@ -18,22 +18,57 @@ You may skip L2 only if it does not serve the user's stated goal, and only after
 
 ---
 
-## Level 2: Medium Fidelity — Inspiration Renders (Image Generation LLM)
+## Base64 Data URI Requirement
+
+All images in HTML artifacts MUST use base64 data URIs, not file paths. The Cowork artifact viewer cannot resolve local filesystem paths. See `image-factory.md` Stage 2b for encoding local files.
+
+---
+
+## Level 2: Medium Fidelity — Inspiration Renders (Image Generation API)
 
 **Purpose:** Visualize materials, color, finish, lighting, and emotional tone. These are directional — not engineering-precise.
-**Tools:** Image generation LLM if available in the harness.
+**Tools:** `scripts/generate-render.py` (requires `GOOGLE_API_KEY` — see `capability-check.md` #8).
 
-**Action (if image-gen tool available):**
-- Generate images and save to `./artifacts/images/`
+### Two-Stage Master-Conditioned Workflow
 
-**Action (if image-gen tool NOT available):**
-- Produce a production-grade prompt package for the user to run externally
-- Ask them to save results to `./artifacts/images/`
+**Why this matters:** Without image conditioning, independent prompts produce visually different devices — different proportions, surface details, feature placement. The render set becomes unusable for stakeholder communication. The master render establishes visual identity; all variations are conditioned on it.
 
-**Alternative — Canvas-Design Skill:**
-When no image-gen LLM is available, the `/example-skills:canvas-design` skill (invoked via the Skill tool) can produce high-fidelity `.png` or `.pdf` visual artifacts that communicate material feel, color story, and emotional tone. This is particularly effective for mood boards (`P4-MOOD-01`) and material boards (`P4-MATBOARD-01`). To use it:
+#### Stage 1 — Master Render (Hard Gate)
+
+1. Write a DTS for the master render
+2. Construct a detailed prompt covering: form, dimensions, materials, hex colors, camera angle, lighting, exclusions
+3. Generate:
+   ```bash
+   python3 scripts/generate-render.py --mode master \
+     --prompt "..." \
+     --output ./artifacts/images/P4-IMG-RENDER-MASTER.png
+   ```
+4. Verify the master against the DTS
+5. **STOP** — present the master render to the user for approval. This establishes the visual identity for all subsequent variations. Do not proceed until approved.
+
+#### Stage 2 — Conditioned Variations
+
+1. Write a DTS for each variation
+2. Variation prompts start with "Using this EXACT same device design..."
+3. Generate each variation using the approved master as reference:
+   ```bash
+   python3 scripts/generate-render.py --mode variation \
+     --reference ./artifacts/images/P4-IMG-RENDER-MASTER.png \
+     --prompt "Using this EXACT same device design, ..." \
+     --output ./artifacts/images/P4-IMG-RENDER-XX.png
+   ```
+4. Typical variation set: hero shot, usage context, material detail, lifestyle
+5. Wait 2 seconds between API calls (rate limiting)
+6. Embed renders in `P4-RENDER-01.html` using the `.b64.txt` companion files written by the script
+7. Register all renders in `artifact-index.md`
+
+### Fallback — When Image Generation API Unavailable
+
+**Prompt packages:** Produce the master prompt and variation prompts as a deliverable for the user to run externally. Include instructions for using `generate-render.py` once they have a `GOOGLE_API_KEY`.
+
+**Canvas-design skill alternative:** The `/example-skills:canvas-design` skill (invoked via the Skill tool) can produce high-fidelity `.png` or `.pdf` visual artifacts that communicate material feel, color story, and emotional tone. This is particularly effective for mood boards (`P4-MOOD-01`) and material boards (`P4-MATBOARD-01`). To use it:
 1. Invoke the skill via the Skill tool
-2. Provide the chosen concept, material palette, and aesthetic direction as the input — the skill will treat this as its subtle reference
+2. Provide the chosen concept, material palette, and aesthetic direction as the input
 3. The skill creates a design philosophy, then expresses it as a polished visual artifact
 4. Save the output to `./artifacts/` and register in `artifact-index.md`
 

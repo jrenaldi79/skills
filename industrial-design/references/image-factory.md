@@ -67,6 +67,28 @@ Build a mapping of URL to data URI inline.
 
 ---
 
+## Stage 2b: Local File Embedding
+
+Use this stage for images already on disk — renders from `generate-render.py`, downloaded files, or CAD outputs. These must also be base64-encoded for HTML artifacts.
+
+**Option A — Read the `.b64.txt` companion file** (preferred for renders):
+`generate-render.py` writes a `.b64.txt` file alongside every image containing the complete `data:image/...;base64,...` URI. Read this file and use its contents directly as the `src` attribute value.
+
+**Option B — Shell encoding:**
+```bash
+B64=$(base64 < file.jpg)
+# Construct: data:image/jpeg;base64,${B64}
+```
+
+**Option C — Python encoding:**
+```python
+import base64
+with open(path, "rb") as f:
+    data_uri = "data:image/jpeg;base64," + base64.b64encode(f.read()).decode("ascii")
+```
+
+---
+
 ## Stage 3: Embed Images
 
 ### Primary path (bash available)
@@ -99,6 +121,8 @@ is **which fetch method to use**, determined once during the capability check.
 | P4-MATBOARD-01.html | Refinement | Material board |
 | P4-RENDER-01.html | Refinement | Rendered concepts |
 | P6-HERORENDER-01.html | Final Spec | Hero render presentation |
+
+The same base64 requirement applies to ALL images in HTML artifacts — web-fetched (Stage 2) and locally generated (Stage 2b). File paths will NOT work in Cowork.
 
 ---
 

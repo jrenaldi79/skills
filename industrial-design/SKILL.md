@@ -135,8 +135,13 @@ Hard gates require explicit user approval before proceeding.
   - **Required first:** Write a Design Language Brief — a 1-page document that names the aesthetic direction for the chosen concept and defines how it manifests through: form language (angular vs organic, minimal vs complex), material expression (raw vs refined, warm vs cool), color story (palette + rationale), and emotional tone (premium, rugged, clinical, approachable, etc.). This brief governs all visual artifacts from Phase 4 onward.
   - **Then:** Create mood board and material board aligned with the Design Language Brief.
   - **Optional:** Use the `/example-skills:canvas-design` skill (Skill tool) for museum-quality mood boards and material boards. The skill generates a design philosophy then expresses it as a polished `.png` or `.pdf`. Feed it the chosen concept, material palette, and aesthetic direction from Phase 3 as its subtle reference input.
-- **4b** Inspiration renders — L2 fidelity 🔒. See `references/rendering-pipeline.md`
-  - **Optional:** If no image-gen LLM is available, the canvas-design skill can produce high-fidelity visual artifacts that convey material feel, color story, and emotional tone as an alternative to L2 prompt packages.
+- **4b-i** Master render — L2 fidelity 🔒
+  - Generate ONE master render per `references/rendering-pipeline.md` two-stage workflow
+  - **HARD GATE:** Present master render for user approval
+  - Fallback: prompt packages or canvas-design skill
+- **4b-ii** Render variations — L2 fidelity 🔓
+  - Generate 3-4 conditioned variations using approved master as reference
+  - Assemble into `P4-RENDER-01.html` with base64-embedded images
 - **4c** Dimensioned sketch + update `design-parameters.yaml` and `materials-and-finishes.yaml` 🔓
 - **Before presenting gate output:** Update `./CLAUDE.md` — current phase, chosen concept in Active Design Direction, new artifacts, key decisions, What's Next
 - **Regenerate dashboard:** Run `python scripts/generate-dashboard.py .` to update `index.html`
@@ -166,7 +171,7 @@ for full details on each level, tools, verification, and the DTS framework.
 | Level | Name | Purpose | Tools |
 |-------|------|---------|-------|
 | L1 | Structural Sketches | Form, proportion, layout | SVG, HTML |
-| L2 | Inspiration Renders | Materials, color, emotional tone | Image-gen LLM |
+| L2 | Inspiration Renders | Materials, color, emotional tone | Image-gen API (`scripts/generate-render.py`) |
 | L3 | CAD-Ready Spec | Engineering documentation | Blender/Fusion MCP or fallback drawings |
 
 ---
@@ -212,3 +217,4 @@ Read `references/costing-policy.md` for the full policy.
 | `references/costing-policy.md` | Phase 6 or any cost/sourcing discussion |
 | `references/spec-template.md` | Phase 1 (brief template) and Phase 6 (final spec format) |
 | `scripts/generate-dashboard.py` | Every phase gate (regenerate project dashboard) |
+| `scripts/generate-render.py` | Phase 4 (L2 renders) and Phase 6 (hero render) |

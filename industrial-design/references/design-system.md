@@ -348,6 +348,8 @@ Every HTML artifact starts from this template:
   }
 
   /* ----- Image Cards (for visual reference boards) ----- */
+  /* IMPORTANT: img src must be a base64 data URI, not a file path or URL.
+     The Cowork viewer cannot resolve either. See image-factory.md. */
   .img-card {
     background: #ffffff;
     border: 1px solid #e8e2da;
