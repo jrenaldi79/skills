@@ -70,3 +70,4 @@ Contains: dated entries recording what changed, why, what artifact informed the 
 - Update these files whenever a dimension, material, or finish decision changes
 - The final spec must match these files. If a conflict exists, resolve it and log the resolution
 - All values must comply with the spec integrity policy (see `engineering-standards.md`)
+- **DTS results are mandatory** for every L2 and L3 artifact. Record PASS or FAIL in the `DTS Result` column of `artifact-index.md`. A render must not be presented to the user without a logged DTS evaluation.

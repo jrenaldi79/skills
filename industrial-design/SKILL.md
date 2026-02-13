@@ -136,12 +136,23 @@ Hard gates require explicit user approval before proceeding.
   - **Then:** Create mood board and material board aligned with the Design Language Brief.
   - **Optional:** Use the `/example-skills:canvas-design` skill (Skill tool) for museum-quality mood boards and material boards. The skill generates a design philosophy then expresses it as a polished `.png` or `.pdf`. Feed it the chosen concept, material palette, and aesthetic direction from Phase 3 as its subtle reference input.
 - **4b-i** Master render — L2 fidelity 🔒
-  - Generate ONE master render per `references/rendering-pipeline.md` two-stage workflow
-  - **HARD GATE:** Present master render for user approval
+  1. Write DTS for master render (REQUIRED — see `references/rendering-pipeline.md` required L2 criteria)
+  2. Include all mandatory dimensional criteria from P3 sketch and `design-parameters.yaml`
+  3. Construct prompt using dimensional accuracy techniques (aspect ratios, comparisons, exclusions)
+  4. Generate ONE master render via `scripts/generate-render.py --mode master`
+  5. Run DTS evaluation — ingest image, cross-reference P3 sketch and `design-parameters.yaml`, score all criteria
+  6. If DTS FAIL → regenerate with corrected prompt, re-evaluate
+  7. If DTS PASS → present master to user for approval
+  8. Log DTS result in `artifact-index.md`
+  - **HARD GATE:** Do not proceed until user approves the master render
   - Fallback: prompt packages or canvas-design skill
 - **4b-ii** Render variations — L2 fidelity 🔓
-  - Generate 3-4 conditioned variations using approved master as reference
-  - Assemble into `P4-RENDER-01.html` with base64-embedded images
+  1. Write DTS for each variation (include dimensional consistency with master)
+  2. Generate 3-4 conditioned variations using approved master as `--reference`
+  3. Run DTS evaluation on each variation — cross-reference against master and P3 sketch
+  4. If any variation fails DTS → regenerate that variation
+  5. Assemble into `P4-RENDER-01.html` with base64-embedded images
+  6. Log all DTS results in `artifact-index.md`
 - **4c** Dimensioned sketch + update `design-parameters.yaml` and `materials-and-finishes.yaml` 🔓
 - **Before presenting gate output:** Update `./CLAUDE.md` — current phase, chosen concept in Active Design Direction, new artifacts, key decisions, What's Next
 - **Regenerate dashboard:** Run `python scripts/generate-dashboard.py .` to update `index.html`

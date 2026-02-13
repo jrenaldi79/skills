@@ -74,6 +74,18 @@ All images in HTML artifacts MUST use base64 data URIs, not file paths. The Cowo
 
 Note: Canvas-design outputs are abstract and compositional — they convey *feeling*, not engineering geometry. They complement but do not replace L1 structural sketches or L3 CAD documentation.
 
+### Prompt Engineering for Dimensional Accuracy
+
+Image models cannot interpret absolute dimensions (e.g., "12mm tall") with precision. To get correct proportions:
+
+1. **State the aspect ratio explicitly** — "aspect ratio 4.6:3.2:1 (length:width:thickness)"
+2. **Use real-world comparisons** — "as thin as an AirTag," "thickness of a pencil," "slim like a Tile Mate tracker"
+3. **Emphasize the critical dimension** — if thickness is the hardest to get right, repeat it multiple times and say "this is the MOST IMPORTANT dimension"
+4. **State what it must NOT look like** — "must NOT look like a thick dome, egg, or tall pebble"
+5. **Request a camera angle that reveals the critical dimension** — for thin devices, request "slightly above eye level so the thinness of the profile is clearly visible"
+
+Even with these techniques, the DTS evaluation step is essential — always verify the output visually against the P3 sketch before presenting to the user.
+
 ---
 
 ## Level 3: High Fidelity — CAD-Ready Specification (Blender / Fusion 360)
@@ -125,12 +137,44 @@ MUST NOT HAVE (fail if present):
 - [ ] ...
 ```
 
+### Required DTS Criteria for L2 Renders
+
+Every L2 render DTS MUST include these checks, derived from existing design artifacts. Do not generate renders without writing these first.
+
+```
+MUST HAVE — Dimensional Consistency:
+- [ ] Overall proportions visually match the aspect ratio from P3 sketch
+      (Reference: P3-SKETCH-XX side profile view and comparison table)
+- [ ] Device thickness/height reads as [X]mm relative to length and width
+      (Reference: design-parameters.yaml → envelope.height, or P3 dimensions)
+- [ ] Form factor matches the selected concept (capsule vs. disc vs. T-form)
+      (Reference: P3 concept description and top/side views)
+
+MUST HAVE — Design Language Consistency:
+- [ ] Color palette matches P4-DESIGNLANG-01 hex values
+- [ ] Material finish matches spec (matte/gloss/textured)
+- [ ] Key features present (LED window, gasket line, etc.)
+
+MUST NOT HAVE:
+- [ ] Text, labels, or branding on the device (unless specified)
+- [ ] Features not in the P3 sketch (buttons, ports, screens, etc.)
+- [ ] Proportions that contradict the side-profile sketch
+```
+
 ## Evaluation Rules by Fidelity
 
 - **L1 (SVG/HTML):** Self-evaluate by inspecting your own code and checking all criteria.
+
 - **L2/L3 (Images/Renders):**
-  - If vision inspection available: ingest and evaluate directly.
-  - If vision inspection NOT available: evaluate prompt/config + file properties; then request user confirmation for visual DTS checks that require human viewing.
+  1. **Ingest** the generated image (Read tool or vision inspection)
+  2. **Cross-reference** against these existing artifacts:
+     - P3 sketch side profile → Does the thickness/height look correct?
+     - P3 sketch top view → Does the plan-view shape match?
+     - design-parameters.yaml → Are key dimensions plausible?
+     - P4-DESIGNLANG-01 → Do colors, materials, and tone match?
+  3. **Score** each DTS criterion as PASS or FAIL
+  4. If ANY "MUST HAVE" fails → regenerate with a corrected prompt before presenting to user
+  5. If vision inspection is NOT available → explicitly flag which DTS criteria require user visual confirmation and ask before proceeding
 
 ## Verification Log
 
