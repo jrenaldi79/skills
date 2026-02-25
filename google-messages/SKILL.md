@@ -12,7 +12,58 @@ description: >
 
 # Google Messages Skill
 
-This skill lets Claude interact with Google Messages Web (messages.google.com/web) via Claude in Chrome.
+A Claude skill that gives you full read/write access to your Android phone's text messages (SMS and RCS) through the Google Messages web interface. No API keys, no authentication tokens — just a browser tab.
+
+## What It Does
+
+This skill lets Claude read, search, and send text messages on your behalf by automating the Google Messages web app (messages.google.com/web) via Claude in Chrome. It works with any Android phone that's paired to Google Messages for web.
+
+**Reading messages**: Check for unread texts, read full conversation threads with any contact, or bulk-fetch multiple conversations at once for summarization and analysis.
+
+**Sending messages**: Send replies to existing conversations or start new ones by phone number. Claude resolves partial names (e.g., "text John" → "John Condon") automatically.
+
+**Bulk operations**: Fetch 5, 10, or 25+ conversation threads in a single call — useful for "summarize my recent texts" or "what have I been texting about this week?" workflows.
+
+## Requirements
+
+- **Claude in Chrome** extension installed and connected
+- **Google Messages for web** (messages.google.com/web) open in a Chrome tab and paired with your Android phone
+- That's it — no API keys, no OAuth, no server setup
+
+## How It Works Under the Hood
+
+Google Messages loads all your recent conversations into the browser's memory via gRPC when the page opens. This skill injects a JavaScript utility library into the page that reads and manipulates the DOM directly — no network calls, no API scraping. Each function call re-injects the full script (functions don't persist between Chrome tool calls), so it's stateless and resilient to page reloads.
+
+The script handles Angular's DOM quirks: stale element references from component recycling, muted contact label parsing, conversation header name resolution, and a two-phase render-wait pattern for reliable navigation between threads.
+
+## Functions at a Glance
+
+| Function | What it does |
+|---|---|
+| `listConversations(limit)` | List all visible conversations with name, snippet, time, and unread status |
+| `checkNewMessages()` | Return only unread conversations |
+| `navigateToConversation("Name")` | Click into a specific conversation (partial name matching) |
+| `extractMessages(limit)` | Read messages from the currently open conversation |
+| `sendMessage("Name", "text")` | Send a message to an existing conversation |
+| `startNewMessage("+1...", "text")` | Start a brand new conversation by phone number |
+| `bulkFetchThreads(options)` | Fetch full threads from multiple conversations at once |
+
+## Quick Examples
+
+- **"Any new texts?"** → `checkNewMessages()`
+- **"Read my messages with Amanda"** → `navigateToConversation("Amanda")` → wait → `extractMessages(40)`
+- **"Text Ethan that I'll be there at 7"** → `sendMessage("Ethan Renaldi", "I'll be there at 7")`
+- **"Summarize my texts from the last 3 days"** → `bulkFetchThreads({ daysBack: 3, maxConversations: 10 })`
+
+## Performance
+
+Single conversation reads take about 3 seconds (navigate + render + extract). Bulk fetches run at roughly 1.5–2 seconds per thread, so 10 conversations takes about 16 seconds.
+
+---
+
+# Technical Reference
+
+Everything below is the machine-facing instruction set that Claude reads when the skill triggers. You don't need to read this to use the skill — it's the implementation detail.
 
 ## Critical: Injection Rule
 
