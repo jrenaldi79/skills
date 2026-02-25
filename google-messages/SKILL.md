@@ -44,15 +44,15 @@ The script handles Angular's DOM quirks: stale element references from component
 | `checkNewMessages()` | Return only unread conversations |
 | `navigateToConversation("Name")` | Click into a specific conversation (partial name matching) |
 | `extractMessages(limit)` | Read messages from the currently open conversation |
-| `sendMessage("Name", "text")` | Send a message to an existing conversation |
-| `startNewMessage("+1...", "text")` | Start a brand new conversation by phone number |
+| `sendMessage("Name", "text")` | Send a message to an existing conversation (two-phase: returns coords, then click) |
+| `startNewMessage("+1...", "text")` | Start a brand new conversation by phone number (two-phase) |
 | `bulkFetchThreads(options)` | Fetch full threads from multiple conversations at once |
 
 ## Quick Examples
 
 - **"Any new texts?"** → `checkNewMessages()`
 - **"Read my messages with Amanda"** → `navigateToConversation("Amanda")` → wait → `extractMessages(40)`
-- **"Text Ethan that I'll be there at 7"** → `sendMessage("Ethan Renaldi", "I'll be there at 7")`
+- **"Text Ethan that I'll be there at 7"** → `sendMessage("Ethan Renaldi", "I'll be there at 7")` → click send button at returned coords
 - **"Summarize my texts from the last 3 days"** → `bulkFetchThreads({ daysBack: 3, maxConversations: 10 })`
 
 ## Performance
@@ -95,8 +95,8 @@ listConversations(30);
 | `checkNewMessages()` | `[{name, snippet, time}]` | Yes — direct return |
 | `navigateToConversation("Name")` | `{status, name, matchCount}` | Yes — clicks and returns immediately |
 | `extractMessages(limit)` | `{status, partnerName, messages: [{from, text, timestamp, isOutgoing}]}` | Yes — reads loaded DOM |
-| `sendMessage("Name", "text")` | `{status: 'sending', name}` | Async — setTimeout internally |
-| `startNewMessage("+1...", "text")` | `{status: 'sending', recipient}` | Async — setTimeout internally |
+| `sendMessage("Name", "text")` | `{status: 'ready_to_send', name, sendButtonCoords: {x,y}}` | Async — requires physical click after |
+| `startNewMessage("+1...", "text")` | `{status: 'ready_to_send', recipient, sendButtonCoords: {x,y}}` | Async — requires physical click after |
 | `bulkFetchThreads(options)` | `{status, threadsFetched, totalMessages, elapsedMs, threads: [...]}` | Async — returns Promise |
 
 **All data-reading functions return structured JSON directly as return values.** No console reading needed for list/check/extract operations.
@@ -186,17 +186,43 @@ If `extractMessages` returns `status: 'empty'`, wait 2 more seconds and call it 
 
 The `limit` parameter defaults to 40 but can be increased for longer conversation history.
 
-#### Send a message (use exact resolved name)
+#### Send a message (two-phase: JS + physical click)
+
+Google Messages uses Angular Material buttons that reject programmatic JS click events (untrusted events).
+Sending requires two steps:
+
+**Phase 1 — Inject script, navigate, and type the message:**
 ```javascript
 // [full script here]
 sendMessage("John Condon", "Your message here");
 ```
+This returns `{ status: 'ready_to_send', name: 'John Condon', sendButtonCoords: { x: 1049, y: 522 } }`.
+The message is typed into the compose box but NOT yet sent.
 
-#### Start a new conversation
+**Phase 2 — Click the send button with the Chrome `computer` tool:**
+```
+computer tool → action: left_click → coordinate: [x, y] from sendButtonCoords
+```
+Then take a screenshot to confirm the message appears in the conversation thread and the compose box is empty.
+
+**IMPORTANT**: Always use the coordinates returned by `sendMessage` — never hardcode them. The button position varies with window size.
+
+#### Start a new conversation (two-phase: JS + physical click)
+
+Same two-phase pattern as sendMessage:
+
+**Phase 1:**
 ```javascript
 // [full script here]
 startNewMessage("+13125550100", "Your message here");
 ```
+Returns `{ status: 'ready_to_send', recipient: '+13125550100', sendButtonCoords: { x, y } }`.
+
+**Phase 2:**
+```
+computer tool → action: left_click → coordinate: [x, y] from sendButtonCoords
+```
+Then screenshot to confirm.
 
 #### Bulk fetch multiple conversation threads
 ```javascript
@@ -237,19 +263,18 @@ Returns:
 - User says "give me a summary of all my recent texts" → `bulkFetchThreads({ daysBack: 7 })`
 - User says "read my messages with John" → single-conversation flow (navigateToConversation + extractMessages)
 
-### Step 4: Read results and handle send button failures
+### Step 4: Read results and complete sends
 
-**For listConversations / checkNewMessages / extractMessages:**
+**For listConversations / checkNewMessages / extractMessages / bulkFetchThreads:**
 Read the return value from the tool call directly — it's structured JSON you can use immediately.
 No `read_console_messages` needed.
 
-**For sendMessage / startNewMessage — send button fallback:**
-After the tool call, wait 2.5 seconds and check console with `read_console_messages` using
-`pattern: "Message sent|not found|Send button"` for confirmation.
-If the send button was disabled and the JS click didn't fire, fall back to clicking the
-send button directly by coordinates using `computer` tool action `left_click` at approximately
-`(1283, 782)` — this is the arrow send button in the bottom-right of the compose area.
-Then take a screenshot to confirm the message appears in the conversation.
+**For sendMessage / startNewMessage — two-phase send:**
+1. The JS call returns `{ status: 'ready_to_send', sendButtonCoords: { x, y } }` — the message is typed but NOT sent
+2. Use the `computer` tool to `left_click` at the coordinates `[x, y]` from the response
+3. Take a screenshot to confirm the message appears in the thread and the compose box is empty
+
+If the JS call returns `status: 'error'`, handle the error (see Error handling below) and do NOT attempt a click.
 
 ### Step 5: Report results
 
@@ -265,7 +290,8 @@ Then take a screenshot to confirm the message appears in the conversation.
 - `status: 'ambiguous'` → relay the matches array and ask user to clarify
 - `status: 'empty'` from extractMessages → conversation didn't load yet; wait 2 seconds and retry
 - `❌ Could not find the message input box` → conversation didn't load; wait and retry
-- Send button still shows message in compose but wasn't sent → use coordinate click fallback at (1283, 782)
+- `status: 'ready_to_send'` → normal — proceed to phase 2 (physical click at sendButtonCoords)
+- Send button coords returned but click didn't send → take screenshot, verify coords, try clicking again
 
 ## Example interactions
 
@@ -279,10 +305,10 @@ Then take a screenshot to confirm the message appears in the conversation.
 → Get tab → inject + `listConversations()` → resolve to "John Condon" → inject + `navigateToConversation("John Condon")` → wait 3s → inject + `extractMessages(40)` → present messages with timestamps
 
 **User**: "Text John that I'm running 10 minutes late"
-→ Get tab → inject + `listConversations()` → resolve to "John Condon" → inject + `sendMessage("John Condon", "Running about 10 minutes late, sorry!")` → confirm
+→ Get tab → inject + `listConversations()` → resolve to "John Condon" → inject + `sendMessage("John Condon", "Running about 10 minutes late, sorry!")` → returns `sendButtonCoords` → `computer` tool `left_click` at coords → screenshot to confirm
 
 **User**: "Send a text to +1 312 555 0100 saying hey"
-→ Get tab → inject + `startNewMessage("+13125550100", "hey")` → confirm
+→ Get tab → inject + `startNewMessage("+13125550100", "hey")` → returns `sendButtonCoords` → `computer` tool `left_click` at coords → screenshot to confirm
 
 **User**: "Give me a summary of my recent texts"
 → Get tab → inject + `bulkFetchThreads({ maxConversations: 10, daysBack: 3 })` → summarize threads

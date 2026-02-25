@@ -7,8 +7,8 @@
  *   checkNewMessages()                          - List all unread conversations
  *   navigateToConversation("Name")              - Click into a conversation (returns immediately)
  *   extractMessages(limit)                      - Read messages from the currently open conversation
- *   sendMessage("Name", "text")                 - Send a message to an existing conversation
- *   startNewMessage("+1...", "text")            - Start a brand new conversation
+ *   sendMessage("Name", "text")                 - Send a message to an existing conversation (async)
+ *   startNewMessage("+1...", "text")            - Start a brand new conversation (async)
  *   bulkFetchThreads(options)                   - Fetch full threads from multiple conversations (async)
  *
  * Reading workflow:
@@ -231,9 +231,98 @@ function extractMessages(limit) {
 
 
 // ─────────────────────────────────────────────
-// 3. SEND A MESSAGE TO AN EXISTING CONVERSATION
+// INTERNAL HELPER: find the visible send button
+// Google Messages renders TWO send buttons — one is a hidden
+// 0×0 ghost that querySelector returns first. We need the one
+// with actual screen dimensions.
 // ─────────────────────────────────────────────
-function sendMessage(name, text) {
+function _findVisibleSendButton() {
+  var btns = document.querySelectorAll('button.send-button');
+  for (var i = 0; i < btns.length; i++) {
+    var rect = btns[i].getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) return btns[i];
+  }
+  return null;
+}
+
+
+// ─────────────────────────────────────────────
+// INTERNAL HELPER: poll for a condition with timeout
+// Returns the truthy result of checkFn, or null on timeout.
+// ─────────────────────────────────────────────
+async function _poll(checkFn, intervalMs, timeoutMs) {
+  var elapsed = 0;
+  while (elapsed < timeoutMs) {
+    var result = checkFn();
+    if (result) return result;
+    await new Promise(function(r) { setTimeout(r, intervalMs); });
+    elapsed += intervalMs;
+  }
+  return null;
+}
+
+
+// ─────────────────────────────────────────────
+// INTERNAL HELPER: type text into the compose box and locate the send button
+// Shared by sendMessage and startNewMessage.
+//
+// IMPORTANT: Google Messages uses Angular Material buttons that reject
+// programmatic JS clicks (untrusted events). After this function types
+// the message, the caller MUST use the Chrome computer tool to physically
+// click the send button at the returned coordinates.
+//
+// Returns: { status: 'ready_to_send', sendButtonCoords: {x, y} }
+//      or: { status: 'error', error: '...' }
+// ─────────────────────────────────────────────
+async function _typeAndSend(text, recipientLabel) {
+  // Poll for textarea (up to 3s)
+  var textarea = await _poll(function() {
+    return document.querySelector('mws-message-compose textarea.input');
+  }, 100, 3000);
+
+  if (!textarea) {
+    console.log('❌ Could not find the message input box.');
+    return { status: 'error', error: 'Message input box not found' };
+  }
+
+  textarea.focus();
+  textarea.select();
+  document.execCommand('selectAll', false, null);
+  document.execCommand('insertText', false, text);
+  textarea.dispatchEvent(new Event('input', { bubbles: true }));
+
+  // Poll for the visible send button to be enabled (up to 2s)
+  var sendBtn = await _poll(function() {
+    var btn = _findVisibleSendButton();
+    return (btn && !btn.disabled) ? btn : null;
+  }, 100, 2000);
+
+  if (!sendBtn) {
+    sendBtn = _findVisibleSendButton();
+    if (!sendBtn) {
+      console.log('❌ Send button not found.');
+      return { status: 'error', error: 'Send button not found' };
+    }
+  }
+
+  // Return button coordinates for a trusted click via the computer tool
+  var rect = sendBtn.getBoundingClientRect();
+  var coords = {
+    x: Math.round(rect.left + rect.width / 2),
+    y: Math.round(rect.top + rect.height / 2)
+  };
+
+  console.log('📝 Message typed for ' + recipientLabel + '. Send button at (' + coords.x + ', ' + coords.y + ')');
+  return { status: 'ready_to_send', sendButtonCoords: coords, recipient: recipientLabel };
+}
+
+
+// ─────────────────────────────────────────────
+// 3. SEND A MESSAGE TO AN EXISTING CONVERSATION
+// Now async — returns a Promise that resolves after
+// the message is actually sent (or errors).
+// ─────────────────────────────────────────────
+async function sendMessage(name, text) {
   var matches = _findMatches(name);
 
   if (matches.length === 0) {
@@ -252,51 +341,19 @@ function sendMessage(name, text) {
   var link = found.item.querySelector('a');
   if (link) link.click();
 
-  setTimeout(function() {
-    var textarea = document.querySelector('mws-message-compose textarea.input');
-    if (!textarea) {
-      console.log('❌ Could not find the message input box.');
-      return;
-    }
-
-    textarea.focus();
-    textarea.select();
-    document.execCommand('selectAll', false, null);
-    document.execCommand('insertText', false, text);
-    textarea.dispatchEvent(new Event('input', { bubbles: true }));
-    textarea.dispatchEvent(new Event('change', { bubbles: true }));
-
-    setTimeout(function() {
-      var sendBtn = document.querySelector('mws-message-send-button button[type="submit"]');
-      if (!sendBtn) {
-        sendBtn = document.querySelector('mws-message-send-button button');
-      }
-      if (!sendBtn) {
-        console.log('❌ Send button not found.');
-        return;
-      }
-
-      if (sendBtn.disabled) {
-        sendBtn.disabled = false;
-        sendBtn.classList.remove('mat-mdc-button-disabled');
-        sendBtn.removeAttribute('disabled');
-      }
-
-      sendBtn.click();
-      console.log('✅ Message sent to ' + found.name + ': "' + text + '"');
-    }, 800);
-
-  }, 1500);
-
-  // Return immediately so the caller knows the name was matched
-  return { status: 'sending', name: found.name };
+  var result = await _typeAndSend(text, found.name);
+  result.name = found.name;
+  // CALLER MUST: use computer tool to left_click at result.sendButtonCoords
+  return result;
 }
 
 
 // ─────────────────────────────────────────────
 // 4. START A NEW CONVERSATION
+// Now async — returns a Promise that resolves after
+// the message is actually sent (or errors).
 // ─────────────────────────────────────────────
-function startNewMessage(phoneOrName, text) {
+async function startNewMessage(phoneOrName, text) {
   var startBtn = Array.from(document.querySelectorAll('button, a')).find(function(el) {
     var label = (el.getAttribute('aria-label') || '').toLowerCase();
     var txt = (el.innerText || '').toLowerCase().trim();
@@ -308,54 +365,31 @@ function startNewMessage(phoneOrName, text) {
   }
   startBtn.click();
 
-  setTimeout(function() {
-    var toInput = document.querySelector(
+  // Poll for recipient input (up to 3s)
+  var toInput = await _poll(function() {
+    return document.querySelector(
       'mws-chips-input input, input[placeholder*="name"], input[placeholder*="phone"], input[placeholder*="To"]'
     );
-    if (!toInput) {
-      console.log('❌ Could not find the recipient input field.');
-      return;
-    }
+  }, 100, 3000);
 
-    toInput.focus();
-    var setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-    setter.call(toInput, phoneOrName);
-    toInput.dispatchEvent(new Event('input', { bubbles: true }));
-    toInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  if (!toInput) {
+    console.log('❌ Could not find the recipient input field.');
+    return { status: 'error', error: 'Recipient input not found' };
+  }
 
-    setTimeout(function() {
-      var textarea = document.querySelector('mws-message-compose textarea.input');
-      if (!textarea) {
-        console.log('❌ Could not find the message input box. Select the recipient from the dropdown first.');
-        return;
-      }
+  toInput.focus();
+  var setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+  setter.call(toInput, phoneOrName);
+  toInput.dispatchEvent(new Event('input', { bubbles: true }));
+  toInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
 
-      textarea.focus();
-      textarea.select();
-      document.execCommand('selectAll', false, null);
-      document.execCommand('insertText', false, text);
-      textarea.dispatchEvent(new Event('input', { bubbles: true }));
-      textarea.dispatchEvent(new Event('change', { bubbles: true }));
+  // Wait for compose area to load after recipient selection
+  await new Promise(function(r) { setTimeout(r, 1200); });
 
-      setTimeout(function() {
-        var sendBtn = document.querySelector('mws-message-send-button button[type="submit"]') ||
-                      document.querySelector('mws-message-send-button button');
-        if (!sendBtn) {
-          console.log('⚠️ Send button not ready. Select the recipient, then call sendMessage() instead.');
-          return;
-        }
-        if (sendBtn.disabled) {
-          sendBtn.disabled = false;
-          sendBtn.classList.remove('mat-mdc-button-disabled');
-          sendBtn.removeAttribute('disabled');
-        }
-        sendBtn.click();
-        console.log('✅ New message sent to ' + phoneOrName + ': "' + text + '"');
-      }, 800);
-    }, 1200);
-  }, 1200);
-
-  return { status: 'sending', recipient: phoneOrName };
+  var result = await _typeAndSend(text, phoneOrName);
+  result.recipient = phoneOrName;
+  // CALLER MUST: use computer tool to left_click at result.sendButtonCoords
+  return result;
 }
 
 
