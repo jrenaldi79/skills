@@ -1,0 +1,8 @@
+{
+  "name": "student-claude-setup",
+  "version": "1.0.0",
+  "description": "Automated SSH and VPS configuration for students.",
+  "author": "John Renaldi",
+  "entrypoint": "SKILL.md",
+  "type": "skill"
+}
